@@ -109,7 +109,7 @@
         <div class="places-grid" id="placesGrid"></div>
       </div>
 
-      <!-- Colonna destra: AirTag -->
+      <!-- Colonna destra: AirTag + Guida Live -->
       <div class="section">
         <h3>🎯 Pannello AirTag / Oggetto</h3>
         <p class="tip">
@@ -142,6 +142,42 @@
 
         <p id="tagSavedInfo" class="tip" style="margin-top:8px;"></p>
       </div>
+
+      <div class="section" id="liveGuidePanel">
+        <h3>🗺️ Guida Live</h3>
+        <p class="tip">Spunta la casella per avviare la guida interattiva dei monumenti.</p>
+        <div style="display:flex;gap:8px;align-items:center;margin:8px 0;">
+          <label><input type="checkbox" id="guideEnable"> Attiva guida live</label>
+          <label><input type="checkbox" id="guideVoice" checked> Audio (voce)</label>
+        </div>
+
+        <div id="guideNow" style="display:none;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <img id="guideImg" src="" alt="" style="width:96px;height:72px;object-fit:cover;border-radius:8px;">
+            <div>
+              <div style="font-weight:700;" id="guideTitle"></div>
+              <div id="guideBlurb" style="color:#555;margin-top:4px;"></div>
+              <div id="guideDistance" class="tip" style="margin-top:6px;"></div>
+            </div>
+          </div>
+
+          <div id="guideSections" style="margin-top:10px;"></div>
+
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="btn btn-primary" id="guideRepeat">🔊 Riascolta</button>
+            <button class="btn" id="guideNavigate">📍 Vai qui</button>
+          </div>
+
+          <div style="margin-top:12px;">
+            <div style="height:8px;background:#eee;border-radius:6px;position:relative;">
+              <div id="arrowFov" style="position:absolute;top:-6px;left:50%;transform:translateX(-50%) rotate(0deg);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid #667eea;"></div>
+            </div>
+            <div class="tip">Freccia = direzione del POI rispetto a dove punti</div>
+          </div>
+        </div>
+
+        <div id="guideNone" class="tip">Nessun POI davanti a te al momento.</div>
+      </div>
     </div>
   </div>
 
@@ -156,11 +192,15 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // ====== Config geolocalizzazione / follow ======
+    /* =======================
+       Config geolocalizzazione / follow
+    ======================= */
     let autoFollow = true;   // la mappa segue sempre la tua posizione
     let userCircle = null;   // cerchio di accuratezza GPS
 
-    // ====== Dati hotel ======
+    /* =======================
+       Dati hotel
+    ======================= */
     const hotelLocation = {
       lat: 48.216837,
       lng: 16.345621,
@@ -168,7 +208,9 @@
       address: "Tiefer Graben 14-20, 1010 Wien"
     };
 
-    // ====== Database + categoria dinamica ======
+    /* =======================
+       POI base + categoria dinamica
+    ======================= */
     const places = {
       monuments: [
         { name:"Palazzo di Schönbrunn", description:"Residenza imperiale barocca con 1.441 stanze, patrimonio UNESCO. Giardini magnifici e zoo.", image:"https://images.unsplash.com/photo-1516550893923-42d28e5677af?w=400", lat:48.184517, lng:16.312148, price:"€16", hours:"8:30-17:30", distance:0 },
@@ -209,10 +251,45 @@
         { name:"Graben & Kohlmarkt", description:"Shopping di lusso.", image:"https://images.unsplash.com/photo-1520176501380-c1d889d43cd5?w=400", lat:48.208889, lng:16.369444, price:"N/D", hours:"10:00-19:00", distance:0 },
         { name:"Mariahilfer Straße", description:"Via commerciale più lunga (1.8 km).", image:"https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400", lat:48.196944, lng:16.340278, price:"N/D", hours:"10:00-20:00", distance:0 }
       ],
-      attractions: [] // caricamento dinamico OSM
+      attractions: [] // dinamico da OSM
     };
 
-    // ====== Stato & mappa ======
+    /* =======================
+       Guida Live - dataset (esempio)
+    ======================= */
+    const liveGuides = [
+      {
+        id: 'stephansdom',
+        name: 'Cattedrale di Santo Stefano',
+        lat: 48.208492, lng: 16.373119,
+        radius: 80,
+        fov: 70,
+        blurb: "Simbolo di Vienna in stile gotico, iniziata nel XII secolo. La torre sud raggiunge i 136 metri.",
+        tts: "Davanti a te la Cattedrale di Santo Stefano, simbolo di Vienna. La torre sud raggiunge i 136 metri.",
+        image: "https://images.unsplash.com/photo-1609856878074-cf31e21ccb6b?w=800",
+        sections: [
+          { title: "Facciata", text: "La facciata fu ricostruita dopo i bombardamenti del 1945." },
+          { title: "Interno", text: "All'interno, altare barocco e navata gotica si fondono armonicamente." }
+        ]
+      },
+      {
+        id: 'hofburg',
+        name: 'Hofburg',
+        lat: 48.206507, lng: 16.365262,
+        radius: 90,
+        fov: 70,
+        blurb: "Antica residenza degli Asburgo. Ospita la Biblioteca Nazionale e la Scuola di Equitazione Spagnola.",
+        tts: "Stai guardando l'Hofburg, antica residenza imperiale degli Asburgo.",
+        image: "https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=800",
+        sections: [
+          { title: "Biblioteca", text: "La Prunksaal è una delle biblioteche barocche più belle del mondo." }
+        ]
+      }
+    ];
+
+    /* =======================
+       Stato & mappa
+    ======================= */
     let map, markers = [], currentCategory = 'monuments';
     let userMarker = null, userLocation = null, watchId = null, currentSort = 'default';
 
@@ -258,7 +335,7 @@
       }
     }
 
-    // >>> AGGIORNATA: sempre visibile/centrata + cerchio di accuratezza
+    // Sempre visibile/centrata + cerchio di accuratezza
     function updateUserLocation(lat, lng, accuracy){
       userLocation = { lat, lng };
 
@@ -297,6 +374,9 @@
       if (currentSort === 'distance') {
         renderPlaces(currentCategory, document.getElementById('searchBar').value);
       }
+
+      // Tick guida (se attiva)
+      liveGuideTick();
     }
 
     function centerOnUser(){
@@ -431,7 +511,7 @@
       }
     }
 
-    // ====== Modal navigazione ======
+    // Modal navigazione
     window.showNavigationModal = function(placeName, lat, lng, distance, fromUserLocation=false){
       const modal = document.getElementById('navigationModal');
       const modalTitle = document.getElementById('modalTitle');
@@ -472,7 +552,7 @@
       modal.style.display = 'block';
     };
 
-    // ====== Apertura navigazione ======
+    // Apertura navigazione
     window.openGoogleMaps = function(lat, lng, mode, startLat, startLng){
       const sLat = startLat ?? hotelLocation.lat;
       const sLng = startLng ?? hotelLocation.lng;
@@ -500,7 +580,7 @@
       window.open(url, '_blank');
     };
 
-    // ====== ATTRAZIONI DINAMICHE (Overpass/OSM) ======
+    // ATTRAZIONI DINAMICHE (Overpass/OSM)
     async function loadAttractionsFromOverpass(centerLat, centerLng, radiusMeters = 5000) {
       const endpoint = 'https://overpass-api.de/api/interpreter';
       const query = `
@@ -560,7 +640,155 @@
       }
     }
 
-    // ====== Eventi ======
+    /* =======================
+       Guida Live: bussola & logica
+    ======================= */
+    let deviceHeading = null;    // 0..360 (Nord=0)
+    let lastGuideId = null;
+    let guideCooldown = 8000;    // ms
+    let lastAnnounceTs = 0;
+
+    function degNormalize(a){ return (a % 360 + 360) % 360; }
+    function degDiff(a, b){
+      let d = Math.abs(degNormalize(a) - degNormalize(b));
+      return d > 180 ? 360 - d : d;
+    }
+    function bearingTo(lat1, lon1, lat2, lon2){
+      const φ1 = lat1 * Math.PI/180, φ2 = lat2 * Math.PI/180;
+      const λ1 = lon1 * Math.PI/180, λ2 = lon2 * Math.PI/180;
+      const y = Math.sin(λ2-λ1) * Math.cos(φ2);
+      const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1);
+      const θ = Math.atan2(y, x) * 180/Math.PI;
+      return degNormalize(θ);
+    }
+
+    function enableCompass(){
+      const iOS = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
+      const handler = (e)=>{
+        if (typeof e.webkitCompassHeading === 'number') {
+          deviceHeading = e.webkitCompassHeading;  // iOS
+        } else if (typeof e.alpha === 'number') {
+          deviceHeading = 360 - e.alpha;           // best-effort
+        }
+        // aggiorna la UI freccia se serve
+        liveGuideTick();
+      };
+
+      if (iOS) {
+        // chiediamo permesso quando l'utente abilita la guida
+        const checkbox = document.getElementById('guideEnable');
+        checkbox?.addEventListener('change', ()=>{
+          if(checkbox.checked){
+            DeviceOrientationEvent.requestPermission()
+              .then(state=>{
+                if(state === 'granted'){
+                  window.addEventListener('deviceorientation', handler, true);
+                }
+              })
+              .catch(()=>{ /* rifiutato */ });
+          } else {
+            window.removeEventListener('deviceorientation', handler, true);
+            deviceHeading = null;
+          }
+        });
+      } else {
+        // non iOS: attiva sempre i listener
+        window.addEventListener('deviceorientationabsolute', handler, true);
+        window.addEventListener('deviceorientation', handler, true);
+      }
+    }
+
+    function pickFrontPoi(){
+      if(!userLocation) return null;
+      const nearby = liveGuides
+        .map(p => {
+          const dist = calculateDistance(userLocation.lat, userLocation.lng, p.lat, p.lng);
+          const brg  = bearingTo(userLocation.lat, userLocation.lng, p.lat, p.lng);
+          return {...p, _dist: dist, _brg: brg};
+        })
+        .filter(p => p._dist <= (p.radius || 60));
+      if(!nearby.length) return null;
+
+      let front = nearby;
+      if (deviceHeading != null) {
+        front = nearby.filter(p => degDiff(deviceHeading, p._brg) <= ((p.fov || 60) / 2));
+        if(!front.length) front = nearby;
+      }
+      front.sort((a,b) => a._dist - b._dist);
+      return front[0];
+    }
+
+    function updateLiveGuideUI(poi){
+      const onEl  = document.getElementById('guideNow');
+      const offEl = document.getElementById('guideNone');
+      const sectionsEl = document.getElementById('guideSections');
+
+      if(!poi){
+        onEl.style.display = 'none';
+        offEl.style.display = 'block';
+        sectionsEl.innerHTML = '';
+        return;
+      }
+
+      onEl.style.display = 'block';
+      offEl.style.display = 'none';
+
+      document.getElementById('guideImg').src = poi.image || '';
+      document.getElementById('guideTitle').textContent = poi.name;
+      document.getElementById('guideBlurb').textContent = poi.blurb || '';
+      document.getElementById('guideDistance').textContent = `Distanza: ${Math.round(poi._dist)} m`;
+
+      sectionsEl.innerHTML = (poi.sections||[]).map(s => `
+        <div style="margin-top:8px;">
+          <div style="font-weight:600">${s.title}</div>
+          <div class="tip">${s.text}</div>
+        </div>
+      `).join('');
+
+      const arrow = document.getElementById('arrowFov');
+      if (deviceHeading != null) {
+        const rel = degNormalize(poi._brg - deviceHeading);
+        arrow.style.transform = `translateX(-50%) rotate(${rel}deg)`;
+      } else {
+        arrow.style.transform = `translateX(-50%) rotate(0deg)`;
+      }
+    }
+
+    function speak(text){
+      if(!text) return;
+      if (!('speechSynthesis' in window)) return;
+      const voiceOn = document.getElementById('guideVoice')?.checked;
+      if(!voiceOn) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'it-IT';
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      window.speechSynthesis.speak(u);
+    }
+
+    function liveGuideTick(){
+      const enabled = document.getElementById('guideEnable')?.checked;
+      if(!enabled){
+        // reset UI minima
+        document.getElementById('guideNow').style.display = 'none';
+        document.getElementById('guideNone').style.display = 'block';
+        return;
+      }
+      const poi = pickFrontPoi();
+      updateLiveGuideUI(poi);
+
+      const now = Date.now();
+      if (poi && poi.id !== lastGuideId && now - lastAnnounceTs > guideCooldown) {
+        speak(poi.tts || poi.blurb);
+        lastGuideId = poi.id;
+        lastAnnounceTs = now;
+      }
+    }
+
+    /* =======================
+       Eventi
+    ======================= */
     document.addEventListener('DOMContentLoaded', ()=>{
       initMap();
       updateDistances();
@@ -631,7 +859,7 @@
         if(e.target === modal){ modal.style.display = 'none'; }
       });
 
-      // ====== PANNELLO AIRTAG ======
+      // PANNELLO AIRTAG
       const btnOpenFindMy = document.getElementById('btnOpenFindMy');
       const btnFindMyHelp = document.getElementById('btnFindMyHelp');
       const btnSaveTag = document.getElementById('btnSaveTag');
@@ -703,6 +931,10 @@
           window.open(url, '_blank');
         } else alert('Inserisci coordinate valide.');
       });
+
+      // Guida Live
+      enableCompass();                   // setup bussola (richiede permesso iOS al toggle)
+      setInterval(liveGuideTick, 1500);  // controllo periodico (funziona solo se abilitata)
     });
 
     window.addEventListener('resize', ()=>{ if(map) map.invalidateSize(); });
