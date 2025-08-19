@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vienna Trip Navigator – VIE → Das Tigra</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <style>
+    html, body { height: 100%; margin:0; padding:0; }
+    #map { height: 65vh; width:100%; }
+    .btn { padding: 0.5rem 1rem; border-radius: 0.75rem; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: transform .05s ease; display:inline-flex; align-items:center; gap:.4rem; cursor:pointer }
+    .btn:active { transform: scale(0.98); }
+    .card { background: rgba(255,255,255,0.9); border-radius: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+    .chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body style="font-family:sans-serif; background:#f8fafc; color:#1e293b;">
+  <header style="background:#4f46e5; color:white; padding:1rem;">
+    <h1 style="margin:0; font-size:1.5rem;">Vienna Trip Navigator</h1>
+    <p style="margin:0.3rem 0 0;">Aeroporto di Vienna (VIE) → Boutique Hotel Das Tigra + monumenti e fast food</p>
+  </header>
+
+  <section style="padding:1rem;">
+    <div class="card" style="padding:1rem; margin-bottom:1rem;">
+      <h2 style="margin-top:0">Vai all'hotel</h2>
+      <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+        <a class="btn" style="background:#4f46e5; color:white;" target="_blank" href="https://www.google.com/maps/dir/?api=1&origin=Vienna+International+Airport&destination=Boutique+Hotel+Das+Tigra+Vienna&travelmode=transit">🚇 Trasporto pubblico</a>
+        <a class="btn" style="background:#059669; color:white;" target="_blank" href="https://www.google.com/maps/dir/?api=1&origin=Vienna+International+Airport&destination=Boutique+Hotel+Das+Tigra+Vienna&travelmode=driving">🚕 Auto/Taxi</a>
+        <a class="btn" style="background:#0ea5e9; color:white;" target="_blank" href="https://www.google.com/maps/dir/?api=1&origin=Vienna+International+Airport&destination=Boutique+Hotel+Das+Tigra+Vienna&travelmode=walking">🚶 A piedi</a>
+      </div>
+    </div>
+
+    <div class="card" style="padding:1rem; margin-bottom:1rem;">
+      <label><input type="checkbox" id="toggleMonuments" checked> Mostra monumenti</label>
+      <label style="margin-left:1rem;"><input type="checkbox" id="toggleFastFood" checked> Mostra fast food</label>
+      <button id="fetchFastFoodBtn" class="btn" style="background:#f59e0b; color:white; margin-left:1rem;">🍔 Carica fast food nell'area</button>
+    </div>
+
+    <div style="display:grid; grid-template-columns:2fr 1fr; gap:1rem;">
+      <div class="card"><div id="map"></div></div>
+      <div class="card" style="padding:1rem; overflow:auto; max-height:65vh;">
+        <h3>Cosa vedere</h3>
+        <div id="poiList"></div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    function makeIcon(color){
+      const svg = encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'><circle cx='12' cy='12' r='10' fill='${color}'/></svg>`);
+      return L.icon({iconUrl:`data:image/svg+xml,${svg}`,iconSize:[24,24],iconAnchor:[12,12]});
+    }
+    const iconMonument = makeIcon('#3b82f6');
+    const iconFastFood = makeIcon('#f59e0b');
+    const iconHotel = makeIcon('#10b981');
+
+    const map = L.map('map').setView([48.2082,16.3738],13);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+
+    const hotelMarker=L.marker([48.2127,16.3717],{icon:iconHotel}).addTo(map).bindPopup('Boutique Hotel Das Tigra');
+
+    const layerMonuments=L.layerGroup().addTo(map);
+    const layerFastFood=L.layerGroup().addTo(map);
+
+    const POIS=[
+      {name:'Stephansdom',lat:48.2084,lng:16.3731,desc:'Cattedrale gotica',paid:false},
+      {name:'Hofburg',lat:48.2065,lng:16.3656,desc:'Palazzo imperiale',paid:true},
+      {name:'Schönbrunn',lat:48.1845,lng:16.3122,desc:'Residenza estiva',paid:true},
+      {name:'Belvedere',lat:48.1913,lng:16.3805,desc:'Museo con Klimt',paid:true},
+      {name:'Prater Riesenrad',lat:48.2165,lng:16.3956,desc:'Ruota panoramica',paid:true}
+    ];
+
+    function addMonuments(){
+      layerMonuments.clearLayers();
+      POIS.forEach(p=>{
+        L.marker([p.lat,p.lng],{icon:iconMonument}).addTo(layerMonuments).bindPopup(`<b>${p.name}</b><br>${p.desc}`);
+      });
+    }
+    addMonuments();
+
+    // Fast food via Overpass
+    async function fetchFastFood(){
+      const b=map.getBounds();
+      const query=`[out:json][timeout:25];(node["amenity"="fast_food"](${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()}));out;`;
+      try{
+        const res=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:query});
+        const json=await res.json();
+        layerFastFood.clearLayers();
+        json.elements.forEach(el=>{
+          if(!el.lat||!el.lon)return;
+          const name=el.tags?.name||'Fast food';
+          L.marker([el.lat,el.lon],{icon:iconFastFood}).addTo(layerFastFood).bindPopup(`<b>${name}</b>`);
+        });
+      }catch(e){alert('Errore caricando fast food');}
+    }
+
+    document.getElementById('fetchFastFoodBtn').onclick=fetchFastFood;
+    document.getElementById('toggleMonuments').onchange=e=>{if(e.target.checked){map.addLayer(layerMonuments);}else{map.removeLayer(layerMonuments);}};
+    document.getElementById('toggleFastFood').onchange=e=>{if(e.target.checked){map.addLayer(layerFastFood);}else{map.removeLayer(layerFastFood);}};
+
+    const list=document.getElementById('poiList');
+    list.innerHTML=POIS.map(p=>`<div style='margin-bottom:0.5rem'><b>${p.name}</b><br>${p.desc} ${p.paid?"<span style='color:#b91c1c'>(a pagamento)</span>":"<span style='color:#15803d'>(gratis)</span>"}</div>`).join('');
+  </script>
+</body>
+</html>
