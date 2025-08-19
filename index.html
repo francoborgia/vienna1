@@ -1,1455 +1,569 @@
-// Modal navigazione - Faccio questa funzione globale
-        window.showNavigationModal = function(placeName, lat, lng, distance, fromUserLocation = false) {
-            const modal = document.getElementById('navigationModal');
-            const modalTitle = document.getElementById('modalTitle');
-            const modalBody = document.getElementById('modalBody');
-            
-            modalTitle.textContent = `Navigazione verso ${placeName}`;
-            
-            // Usa la posizione utente se disponibile e richiesta
-            const startLat = fromUserLocation && userLocation ? userLocation.lat : hotelLocation.lat;
-            const startLng = fromUserLocation && userLocation ? userLocation.lng : hotelLocation.lng;
-            const startName = fromUserLocation && userLocation ? "la tua posizione" : hotelLocation.name;
-            
-            let navigationOptions = '';
-            
-            if (distance <= 500) {
-                navigationOptions = `
-                    <div class="navigation-options">
-                        <h3>🚶 Percorso a piedi (${distance}m - circa ${Math.round(distance/80)} minuti)</h3>
-                        <p style="color: #666; margin-bottom: 15px;">Partenza da: <strong>${startName}</strong></p>
-                        <div class="nav-option" onclick="openGoogleMaps(${lat}, ${lng}, 'walking', ${startLat}, ${startLng})">
-                            <h4>Google Maps - A piedi</h4>
-                            <p>Ottieni indicazioni dettagliate per camminare</p>
-                        </div>
-                        <div class="nav-option" onclick="openAppleMaps(${lat}, ${lng}, 'walking', ${startLat}, ${startLng})">
-                            <h4>Apple Maps - A piedi</h4>
-                            <p>Per dispositivi iOS</p>
-                        </div>
-                        <hr style="margin: 20px 0; border: 1px solid #eee;">
-                        <p style="color: #666; font-size: 14px;">
-                            <strong>Suggerimento:</strong> Il percorso è breve e Vienna è una città molto pedonale. 
-                            Ti consigliamo di camminare per goderti l'atmosfera della città!
-                        </p>
-                    </div>
-                `;
-            } else {
-                const walkingTime = Math.round(distance/80);
-                const transitTime = Math.round(distance/250);
-                
-                navigationOptions = `
-                    <div class="navigation-options">
-                        <h3>🚇 Percorso consigliato con mezzi pubblici</h3>
-                        <p style="color: #666; margin-bottom: 15px;">Partenza da: <strong>${startName}</strong></p>
-                        <div class="nav-option" onclick="openGoogleMaps(${lat}, ${lng}, 'transit', ${startLat}, ${startLng})">
-                            <h4>Google Maps - Mezzi pubblici</h4>
-                            <p>Metro U-Bahn, Tram o Bus (circa ${transitTime} minuti)</p>
-                        </div>
-                        <div class="nav-option" onclick="openWienerLinien(${lat}, ${lng}, ${startLat}, ${startLng})">
-                            <h4>Wiener Linien - App ufficiale trasporti Vienna</h4>
-                            <p>Biglietti e orari in tempo reale</p>
-                        </div>
-                        <div class="nav-option" onclick="openUber(${lat}, ${lng}, ${startLat}, ${startLng})">
-                            <h4>Uber / Taxi</h4>
-                            <p>Opzione più veloce ma più costosa</p>
-                        </div>
-                        <hr style="margin: 20px 0; border: 1px solid #eee;">
-                        <h3>🚶 Alternativa a piedi (${distance}m - circa ${walkingTime} minuti)</h3>
-                        <div class="nav-option" onclick="openGoogleMaps(${lat}, ${lng}, 'walking', ${startLat}, ${startLng})">
-                            <h4>Google Maps - A piedi</h4>
-                            <p>Se preferisci camminare</p>
-                        </div>
-                        <hr style="margin: 20px 0; border: 1px solid #eee;">
-                        <p style="color: #666; font-size: 14px;">
-                            <strong>Biglietti trasporti:</strong><br>
-                            • Biglietto singolo: €2.40<br>
-                            • Giornaliero: €8.00<br>
-                            • Vienna Card 48h: €25 (trasporti + sconti musei)
-                        </p>
-                    </div>
-                `;
-            }
-            
-            modalBody.innerHTML = navigationOptions;
-            modal.style.display = 'block';
-        }
-
-        // Funzioni per aprire app di navigazione - Le rendo globali
-        window.openGoogleMaps = function(lat, lng, mode, startLat, startLng) {
-            startLat = startLat || hotelLocation.lat;
-            startLng = startLng || hotelLocation.lng;
-            const url = `https://www.google.com/maps/dir/${startLat},${startLng}/${lat},${lng}/@${lat},${lng},15z/data=!4m2!4m1!3e${mode === 'walking' ? '2' : '3'}`;
-            window.open(url, '_blank');
-        }
-
-        window.openAppleMaps = function(lat, lng, mode, startLat, startLng) {
-            startLat = startLat || hotelLocation.lat;
-            startLng = startLng || hotelLocation.lng;
-            const url = `maps://maps.apple.com/maps?saddr=${startLat},${startLng}&daddr=${lat},${lng}&dirflg=${mode === 'walking' ? 'w' : 'r'}`;
-            window.open(url, '_blank');
-        }
-
-        window.openWienerLinien = function(lat, lng, startLat, startLng) {
-            startLat = startLat || hotelLocation.lat;
-            startLng = startLng || hotelLocation.lng;
-            const url = `https://www.wienerlinien.at/web/wl-en/journey-planner?from=${startLat},${startLng}&to=${lat},${lng}`;
-            window.open(url, '_blank');
-        }
-
-        window.openUber = function(lat, lng, startLat, startLng) {
-            startLat = startLat || hotelLocation.lat;
-            startLng = startLng || hotelLocation.lng;
-            const url = `https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${startLat}&pickup[longitude]=${startLng}&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}`;<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vienna Tourist Guide</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-
-        h1 {
-            text-align: center;
-            color: #764ba2;
-            margin-bottom: 30px;
-            font-size: 2.5em;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .map-container {
-            height: 500px;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-bottom: 30px;
-            position: relative;
-        }
-
-        #map {
-            height: 100%;
-            width: 100%;
-        }
-
-        .categories {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .category-btn {
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.3s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .category-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-        }
-
-        .category-btn.active {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .places-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 25px;
-            margin-top: 30px;
-        }
-
-        .place-card {
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-
-        .place-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-        }
-
-        .place-image {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-        }
-
-        .place-info {
-            padding: 20px;
-        }
-
-        .place-name {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .place-description {
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 15px;
-            font-size: 0.95em;
-        }
-
-        .place-details {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .detail-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #555;
-            font-size: 0.9em;
-        }
-
-        .detail-icon {
-            width: 20px;
-            height: 20px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .navigate-btn {
-            width: 100%;
-            padding: 12px;
-            margin-top: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        .navigate-btn:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-            transform: scale(1.02);
-        }
-
-        .hotel-info {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-
-        .hotel-info h2 {
-            margin-bottom: 10px;
-        }
-
-        .search-bar {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            font-size: 16px;
-            margin-bottom: 20px;
-            transition: border-color 0.3s;
-        }
-
-        .search-bar:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .filter-options {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .filter-chip {
-            padding: 8px 15px;
-            background: #f0f0f0;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 2px solid transparent;
-        }
-
-        .filter-chip:hover {
-            background: #e0e0e0;
-        }
-
-        .filter-chip.active {
-            background: #667eea;
-            color: white;
-            border-color: #764ba2;
-        }
-
-        .distance-badge {
-            display: inline-block;
-            padding: 5px 10px;
-            background: #4CAF50;
-            color: white;
-            border-radius: 15px;
-            font-size: 0.85em;
-            font-weight: bold;
-        }
-
-        .price-badge {
-            display: inline-block;
-            padding: 5px 10px;
-            background: #ff9800;
-            color: white;
-            border-radius: 15px;
-            font-size: 0.85em;
-            font-weight: bold;
-        }
-
-        .free-badge {
-            background: #4CAF50;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.7);
-            animation: fadeIn 0.3s;
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 600px;
-            position: relative;
-            animation: slideIn 0.3s;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideIn {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .close {
-            position: absolute;
-            right: 20px;
-            top: 20px;
-            font-size: 30px;
-            cursor: pointer;
-            color: #999;
-            transition: color 0.3s;
-        }
-
-        .close:hover {
-            color: #333;
-        }
-
-        .navigation-options {
-            margin-top: 20px;
-        }
-
-        .nav-option {
-            padding: 15px;
-            margin: 10px 0;
-            background: #f5f5f5;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .nav-option:hover {
-            background: #e0e0e0;
-            transform: translateX(5px);
-        }
-
-        .nav-option h4 {
-            color: #667eea;
-            margin-bottom: 5px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-        }
-
-        .location-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 1000;
-            background: white;
-            border: 2px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: all 0.3s;
-        }
-
-        .location-btn:hover {
-            background: #667eea;
-            color: white;
-        }
-
-        .location-btn.active {
-            background: #667eea;
-            color: white;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(102, 126, 234, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
-        }
-
-        .distance-from-me {
-            background: #2196F3;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 0.8em;
-            margin-left: 5px;
-        }
-
-        .sort-options {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            align-items: center;
-        }
-
-        .sort-btn {
-            padding: 8px 15px;
-            background: white;
-            border: 2px solid #667eea;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
-        }
-
-        .sort-btn:hover {
-            background: #f0f0f0;
-        }
-
-        .sort-btn.active {
-            background: #667eea;
-            color: white;
-        }
-
-        .location-status {
-            padding: 10px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: none;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .location-status.active {
-            display: flex;
-        }
-
-        .pulse-dot {
-            width: 10px;
-            height: 10px;
-            background: white;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-            
-            h1 {
-                font-size: 1.8em;
-            }
-            
-            .places-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .map-container {
-                height: 300px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vienna Tourist Guide</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
+    .container{max-width:1400px;margin:0 auto;background:rgba(255,255,255,.95);border-radius:20px;padding:30px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+    h1{text-align:center;color:#764ba2;margin-bottom:30px;font-size:2.5em;text-shadow:2px 2px 4px rgba(0,0,0,.1)}
+    .map-container{height:500px;border-radius:15px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.2);margin-bottom:30px;position:relative}
+    #map{height:100%;width:100%}
+    .categories{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:30px}
+    .category-btn{padding:15px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:16px;font-weight:bold;transition:.3s;box-shadow:0 5px 15px rgba(0,0,0,.2)}
+    .category-btn:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+    .category-btn.active{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%)}
+    .places-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:25px;margin-top:30px}
+    .place-card{background:#fff;border-radius:15px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,.1);transition:.3s;cursor:pointer}
+    .place-card:hover{transform:translateY(-5px);box-shadow:0 15px 35px rgba(0,0,0,.2)}
+    .place-image{width:100%;height:200px;object-fit:cover}
+    .place-info{padding:20px}
+    .place-name{font-size:1.3em;font-weight:bold;color:#333;margin-bottom:10px}
+    .place-description{color:#666;line-height:1.6;margin-bottom:15px;font-size:.95em}
+    .place-details{display:flex;flex-direction:column;gap:10px}
+    .detail-item{display:flex;align-items:center;gap:10px;color:#555;font-size:.9em}
+    .navigate-btn{width:100%;padding:12px;margin-top:15px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;transition:.3s}
+    .navigate-btn:hover{background:linear-gradient(135deg,#764ba2 0%,#667eea 100%);transform:scale(1.02)}
+    .hotel-info{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:#fff;padding:20px;border-radius:15px;margin-bottom:30px;box-shadow:0 10px 25px rgba(0,0,0,.2)}
+    .search-bar{width:100%;padding:15px;border:2px solid #ddd;border-radius:10px;font-size:16px;margin-bottom:20px;transition:border-color .3s}
+    .search-bar:focus{outline:none;border-color:#667eea}
+    .filter-options{display:flex;gap:15px;margin-bottom:20px;flex-wrap:wrap}
+    .filter-chip{padding:8px 15px;background:#f0f0f0;border-radius:20px;cursor:pointer;transition:.3s;border:2px solid transparent}
+    .filter-chip:hover{background:#e0e0e0}
+    .filter-chip.active{background:#667eea;color:#fff;border-color:#764ba2}
+    .distance-badge{display:inline-block;padding:5px 10px;background:#4CAF50;color:#fff;border-radius:15px;font-size:.85em;font-weight:bold}
+    .price-badge{display:inline-block;padding:5px 10px;background:#ff9800;color:#fff;border-radius:15px;font-size:.85em;font-weight:bold}
+    .free-badge{background:#4CAF50}
+    .modal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.7);animation:fadeIn .3s}
+    .modal-content{background:#fff;margin:5% auto;padding:30px;border-radius:20px;width:90%;max-width:600px;position:relative;animation:slideIn .3s}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes slideIn{from{transform:translateY(-50px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .close{position:absolute;right:20px;top:20px;font-size:30px;cursor:pointer;color:#999;transition:color .3s}
+    .close:hover{color:#333}
+    .navigation-options{margin-top:20px}
+    .nav-option{padding:15px;margin:10px 0;background:#f5f5f5;border-radius:10px;cursor:pointer;transition:.3s}
+    .nav-option:hover{background:#e0e0e0;transform:translateX(5px)}
+    .nav-option h4{color:#667eea;margin-bottom:5px}
+    .loading{text-align:center;padding:20px;color:#666}
+    .location-btn{position:absolute;top:10px;right:10px;z-index:1000;background:#fff;border:2px solid #667eea;border-radius:50%;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.2);transition:.3s}
+    .location-btn:hover{background:#667eea;color:#fff}
+    .location-btn.active{background:#667eea;color:#fff;animation:pulse 2s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(102,126,234,.7)}70%{box-shadow:0 0 0 10px rgba(102,126,234,0)}100%{box-shadow:0 0 0 0 rgba(102,126,234,0)}}
+    .distance-from-me{background:#2196F3;color:#fff;padding:3px 8px;border-radius:10px;font-size:.8em;margin-left:5px}
+    .sort-options{display:flex;gap:10px;margin-bottom:20px;align-items:center}
+    .sort-btn{padding:8px 15px;background:#fff;border:2px solid #667eea;border-radius:20px;cursor:pointer;transition:.3s;font-size:14px}
+    .sort-btn:hover{background:#f0f0f0}
+    .sort-btn.active{background:#667eea;color:#fff}
+    .location-status{padding:10px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border-radius:10px;margin-bottom:20px;display:none;align-items:center;gap:10px}
+    .location-status.active{display:flex}
+    .pulse-dot{width:10px;height:10px;background:#fff;border-radius:50%;animation:pulse 2s infinite}
+    @media (max-width:768px){
+      .container{padding:15px}
+      h1{font-size:1.8em}
+      .places-grid{grid-template-columns:1fr}
+      .map-container{height:300px}
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🏛️ Vienna Tourist Guide 🇦🇹</h1>
-        
-        <div class="hotel-info">
-            <h2>📍 Il Tuo Hotel</h2>
-            <p><strong>Boutique Hotel Das Tigra</strong></p>
-            <p>Tiefer Graben 14-20, 1010 Wien</p>
-            <p>⭐⭐⭐⭐ Hotel boutique nel centro storico di Vienna</p>
-        </div>
+  <div class="container">
+    <h1>🏛️ Vienna Tourist Guide 🇦🇹</h1>
 
-        <div class="map-container">
-            <div id="map"></div>
-            <button class="location-btn" id="locationBtn" title="La mia posizione">📍</button>
-        </div>
-
-        <div class="location-status" id="locationStatus">
-            <div class="pulse-dot"></div>
-            <span>Geolocalizzazione attiva - La tua posizione è aggiornata in tempo reale</span>
-        </div>
-
-        <input type="text" class="search-bar" placeholder="🔍 Cerca monumenti, ristoranti, attrazioni..." id="searchBar">
-
-        <div class="sort-options">
-            <span style="font-weight: bold;">Ordina per:</span>
-            <button class="sort-btn active" data-sort="default">Default</button>
-            <button class="sort-btn" data-sort="distance">Distanza da me</button>
-            <button class="sort-btn" data-sort="name">Nome A-Z</button>
-        </div>
-
-        <div class="filter-options">
-            <div class="filter-chip" data-filter="free">Gratuito</div>
-            <div class="filter-chip" data-filter="paid">A pagamento</div>
-            <div class="filter-chip" data-filter="walking">< 500m a piedi</div>
-            <div class="filter-chip" data-filter="transport">> 500m trasporti</div>
-        </div>
-
-        <div class="categories">
-            <button class="category-btn active" data-category="monuments">🏛️ Monumenti</button>
-            <button class="category-btn" data-category="museums">🎨 Musei</button>
-            <button class="category-btn" data-category="restaurants">🍽️ Ristoranti</button>
-            <button class="category-btn" data-category="fastfood">🍔 Fast Food</button>
-            <button class="category-btn" data-category="parks">🌳 Parchi</button>
-            <button class="category-btn" data-category="shopping">🛍️ Shopping</button>
-        </div>
-
-        <div class="places-grid" id="placesGrid"></div>
+    <div class="hotel-info">
+      <h2>📍 Il Tuo Hotel</h2>
+      <p><strong>Boutique Hotel Das Tigra</strong></p>
+      <p>Tiefer Graben 14-20, 1010 Wien</p>
+      <p>⭐⭐⭐⭐ Hotel boutique nel centro storico di Vienna</p>
     </div>
 
-    <div id="navigationModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2 id="modalTitle">Navigazione</h2>
-            <div id="modalBody"></div>
-        </div>
+    <div class="map-container">
+      <div id="map"></div>
+      <button class="location-btn" id="locationBtn" title="La mia posizione">📍</button>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // Dati dell'hotel
-        const hotelLocation = {
-            lat: 48.216837,
-            lng: 16.345621,
-            name: "Boutique Hotel Das Tigra",
-            address: "Tiefer Graben 14-20, 1010 Wien"
-        };
+    <div class="location-status" id="locationStatus">
+      <div class="pulse-dot"></div>
+      <span>Geolocalizzazione attiva - La tua posizione è aggiornata in tempo reale</span>
+    </div>
 
-        // Database completo dei luoghi di Vienna
-        const places = {
-            monuments: [
-                {
-                    name: "Palazzo di Schönbrunn",
-                    description: "Residenza imperiale barocca con 1.441 stanze, patrimonio UNESCO. Giardini magnifici e zoo.",
-                    image: "https://images.unsplash.com/photo-1516550893923-42d28e5677af?w=400",
-                    lat: 48.184517,
-                    lng: 16.312148,
-                    price: "€16",
-                    hours: "8:30-17:30",
-                    distance: 0
-                },
-                {
-                    name: "Cattedrale di Santo Stefano",
-                    description: "Simbolo di Vienna, cattedrale gotica del XII secolo con torre alta 136 metri.",
-                    image: "https://images.unsplash.com/photo-1609856878074-cf31e21ccb6b?w=400",
-                    lat: 48.208492,
-                    lng: 16.373119,
-                    price: "Gratuito (Torre €6)",
-                    hours: "6:00-22:00",
-                    distance: 0
-                },
-                {
-                    name: "Hofburg",
-                    description: "Complesso imperiale con musei, biblioteca nazionale e scuola di equitazione spagnola.",
-                    image: "https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=400",
-                    lat: 48.206507,
-                    lng: 16.365262,
-                    price: "€15",
-                    hours: "9:00-17:30",
-                    distance: 0
-                },
-                {
-                    name: "Belvedere",
-                    description: "Complesso barocco con due palazzi e giardini. Ospita 'Il Bacio' di Klimt.",
-                    image: "https://images.unsplash.com/photo-1583225173839-59b4e437f4d4?w=400",
-                    lat: 48.191567,
-                    lng: 16.380995,
-                    price: "€16",
-                    hours: "10:00-18:00",
-                    distance: 0
-                },
-                {
-                    name: "Prater e Ruota Panoramica",
-                    description: "Parco divertimenti storico con l'iconica ruota panoramica del 1897.",
-                    image: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=400",
-                    lat: 48.216571,
-                    lng: 16.395776,
-                    price: "€13.50",
-                    hours: "10:00-22:00",
-                    distance: 0
-                },
-                {
-                    name: "Opera di Stato di Vienna",
-                    description: "Uno dei teatri d'opera più importanti al mondo, inaugurato nel 1869.",
-                    image: "https://images.unsplash.com/photo-1544320824-8db57da2fa97?w=400",
-                    lat: 48.203001,
-                    lng: 16.369002,
-                    price: "Tour €13",
-                    hours: "Tour: 10:00-15:00",
-                    distance: 0
-                },
-                {
-                    name: "Palazzo del Parlamento",
-                    description: "Edificio neoclassico sede del Parlamento austriaco con statue greche.",
-                    image: "https://images.unsplash.com/photo-1548802673-5abd0ff47c09?w=400",
-                    lat: 48.207788,
-                    lng: 16.357613,
-                    price: "Tour gratuito",
-                    hours: "Lun-Sab con prenotazione",
-                    distance: 0
-                },
-                {
-                    name: "Rathaus (Municipio)",
-                    description: "Imponente municipio neogotico con torre di 98 metri e piazza per eventi.",
-                    image: "https://images.unsplash.com/photo-1580836507615-96f7f7950e3b?w=400",
-                    lat: 48.210577,
-                    lng: 16.357420,
-                    price: "Gratuito",
-                    hours: "Tour Lun, Mer, Ven 13:00",
-                    distance: 0
-                }
-            ],
-            museums: [
-                {
-                    name: "Kunsthistorisches Museum",
-                    description: "Uno dei musei d'arte più importanti al mondo con opere di Raffaello, Vermeer, Velázquez.",
-                    image: "https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=400",
-                    lat: 48.203551,
-                    lng: 16.361587,
-                    price: "€21",
-                    hours: "10:00-18:00 (Gio fino 21:00)",
-                    distance: 0
-                },
-                {
-                    name: "Albertina",
-                    description: "Collezione grafica più grande al mondo con opere di Monet, Picasso, Klimt.",
-                    image: "https://images.unsplash.com/photo-1583037189850-1921ae7c6c22?w=400",
-                    lat: 48.204731,
-                    lng: 16.368438,
-                    price: "€18.90",
-                    hours: "10:00-18:00 (Mer, Ven fino 21:00)",
-                    distance: 0
-                },
-                {
-                    name: "Museo di Storia Naturale",
-                    description: "30 milioni di oggetti esposti inclusi dinosauri e la Venere di Willendorf.",
-                    image: "https://images.unsplash.com/photo-1613414969929-491c9c779910?w=400",
-                    lat: 48.205268,
-                    lng: 16.359989,
-                    price: "€16",
-                    hours: "9:00-18:00 (Mer fino 20:00)",
-                    distance: 0
-                },
-                {
-                    name: "MAK - Museo Arti Applicate",
-                    description: "Design, architettura e arte contemporanea. Collezione unica di Wiener Werkstätte.",
-                    image: "https://images.unsplash.com/photo-1541367777708-c1ccbfb0e6d5?w=400",
-                    lat: 48.207395,
-                    lng: 16.381705,
-                    price: "€15",
-                    hours: "10:00-18:00 (Mar fino 21:00)",
-                    distance: 0
-                }
-            ],
-            restaurants: [
-                {
-                    name: "Figlmüller",
-                    description: "Famoso per la schnitzel più grande di Vienna, tradizione dal 1905.",
-                    image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400",
-                    lat: 48.208765,
-                    lng: 16.374526,
-                    price: "€€€",
-                    hours: "11:00-22:30",
-                    distance: 0
-                },
-                {
-                    name: "Café Central",
-                    description: "Storico caffè viennese frequentato da Freud e Trotsky. Torte imperiali.",
-                    image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400",
-                    lat: 48.210372,
-                    lng: 16.365063,
-                    price: "€€",
-                    hours: "7:30-22:00",
-                    distance: 0
-                },
-                {
-                    name: "Plachutta Wollzeile",
-                    description: "Specialità: Tafelspitz (bollito di manzo), cucina tradizionale austriaca.",
-                    image: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400",
-                    lat: 48.208492,
-                    lng: 16.376798,
-                    price: "€€€",
-                    hours: "11:30-23:00",
-                    distance: 0
-                },
-                {
-                    name: "Zum Schwarzen Kameel",
-                    description: "Dal 1618, ristorante Art Nouveau con specialità austriache e wine bar.",
-                    image: "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=400",
-                    lat: 48.210833,
-                    lng: 16.367778,
-                    price: "€€€€",
-                    hours: "8:00-24:00",
-                    distance: 0
-                },
-                {
-                    name: "Café Sacher",
-                    description: "Casa della torta Sachertorte originale, elegante caffè dal 1876.",
-                    image: "https://images.unsplash.com/photo-1550916478-59a58fe5e873?w=400",
-                    lat: 48.203889,
-                    lng: 16.369444,
-                    price: "€€€",
-                    hours: "8:00-24:00",
-                    distance: 0
-                }
-            ],
-            fastfood: [
-                {
-                    name: "McDonald's Stephansplatz",
-                    description: "McDonald's nel cuore di Vienna, vicino alla cattedrale. Menu classici e specialità austriache.",
-                    image: "https://images.unsplash.com/photo-1552895638-f7fe08d2f7d5?w=400",
-                    lat: 48.208556,
-                    lng: 16.373139,
-                    price: "€",
-                    hours: "6:00-1:00 (Ven-Sab fino 3:00)",
-                    distance: 0
-                },
-                {
-                    name: "McDonald's Hauptbahnhof",
-                    description: "Grande McDonald's nella stazione centrale. Ideale per viaggiatori.",
-                    image: "https://images.unsplash.com/photo-1552895638-f7fe08d2f7d5?w=400",
-                    lat: 48.185252,
-                    lng: 16.377482,
-                    price: "€",
-                    hours: "24 ore",
-                    distance: 0
-                },
-                {
-                    name: "McDonald's Praterstern",
-                    description: "Vicino al Prater e alla ruota panoramica. McCafé incluso.",
-                    image: "https://images.unsplash.com/photo-1552895638-f7fe08d2f7d5?w=400",
-                    lat: 48.218765,
-                    lng: 16.391944,
-                    price: "€",
-                    hours: "24 ore",
-                    distance: 0
-                },
-                {
-                    name: "Burger King Mariahilferstraße",
-                    description: "Burger King sulla principale via dello shopping. Terrazza esterna.",
-                    image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400",
-                    lat: 48.196389,
-                    lng: 16.340556,
-                    price: "€",
-                    hours: "8:00-24:00",
-                    distance: 0
-                },
-                {
-                    name: "Burger King Wien Mitte",
-                    description: "Nel centro commerciale Wien Mitte The Mall. Comodo per i trasporti.",
-                    image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400",
-                    lat: 48.205833,
-                    lng: 16.384167,
-                    price: "€",
-                    hours: "9:00-23:00",
-                    distance: 0
-                },
-                {
-                    name: "McDonald's Schwedenplatz",
-                    description: "Vista sul canale del Danubio. Vicino alla vita notturna.",
-                    image: "https://images.unsplash.com/photo-1552895638-f7fe08d2f7d5?w=400",
-                    lat: 48.211667,
-                    lng: 16.377500,
-                    price: "€",
-                    hours: "7:00-2:00 (Ven-Sab 24h)",
-                    distance: 0
-                },
-                {
-                    name: "Burger King Westbahnhof",
-                    description: "Nella stazione Westbahnhof. Menu King Deal conveniente.",
-                    image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400",
-                    lat: 48.196944,
-                    lng: 16.338889,
-                    price: "€",
-                    hours: "6:00-24:00",
-                    distance: 0
-                },
-                {
-                    name: "McDonald's Kärntner Straße",
-                    description: "Sulla via pedonale dello shopping. 3 piani con vista città.",
-                    image: "https://images.unsplash.com/photo-1552895638-f7fe08d2f7d5?w=400",
-                    lat: 48.204722,
-                    lng: 16.370833,
-                    price: "€",
-                    hours: "7:00-1:00",
-                    distance: 0
-                },
-                {
-                    name: "Bitzinger Würstelstand",
-                    description: "Chiosco di salsicce leggendario dietro l'Opera. Käsekrainer e champagne!",
-                    image: "https://images.unsplash.com/photo-1566843972142-a7fcb70de55a?w=400",
-                    lat: 48.202778,
-                    lng: 16.368889,
-                    price: "€",
-                    hours: "8:00-4:00",
-                    distance: 0
-                },
-                {
-                    name: "Naschmarkt",
-                    description: "Mercato con oltre 100 bancarelle di street food internazionale.",
-                    image: "https://images.unsplash.com/photo-1567089684019-78f86ebc0de1?w=400",
-                    lat: 48.198634,
-                    lng: 16.362892,
-                    price: "€-€€",
-                    hours: "6:00-21:00 (Dom chiuso)",
-                    distance: 0
-                },
-                {
-                    name: "Trzesniewski",
-                    description: "Mini-sandwich gourmet dal 1902. 22 varietà diverse.",
-                    image: "https://images.unsplash.com/photo-1553909489-cd47e0907e35?w=400",
-                    lat: 48.209167,
-                    lng: 16.370278,
-                    price: "€",
-                    hours: "8:30-19:00",
-                    distance: 0
-                },
-                {
-                    name: "Burgerista",
-                    description: "Burger gourmet austriaci con ingredienti biologici locali.",
-                    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400",
-                    lat: 48.200278,
-                    lng: 16.369722,
-                    price: "€€",
-                    hours: "11:00-23:00",
-                    distance: 0
-                }
-            ],
-            parks: [
-                {
-                    name: "Stadtpark",
-                    description: "Parco più fotografato di Vienna con statua dorata di Johann Strauss.",
-                    image: "https://images.unsplash.com/photo-1590682244746-d7b27e6a5c9b?w=400",
-                    lat: 48.204722,
-                    lng: 16.378611,
-                    price: "Gratuito",
-                    hours: "Sempre aperto",
-                    distance: 0
-                },
-                {
-                    name: "Volksgarten",
-                    description: "Giardino delle rose con oltre 3000 rosai e Tempio di Teseo.",
-                    image: "https://images.unsplash.com/photo-1559128019-7c1dd7c9eefd?w=400",
-                    lat: 48.207778,
-                    lng: 16.361111,
-                    price: "Gratuito",
-                    hours: "Sempre aperto",
-                    distance: 0
-                },
-                {
-                    name: "Augarten",
-                    description: "Parco barocco con torre antiaerea e sede dei Piccoli Cantori di Vienna.",
-                    image: "https://images.unsplash.com/photo-1589207821092-9ce3f6132eb9?w=400",
-                    lat: 48.226111,
-                    lng: 16.380278,
-                    price: "Gratuito",
-                    hours: "Sempre aperto",
-                    distance: 0
-                }
-            ],
-            shopping: [
-                {
-                    name: "Graben & Kohlmarkt",
-                    description: "Via dello shopping di lusso con boutique esclusive e gioiellerie.",
-                    image: "https://images.unsplash.com/photo-1520176501380-c1d889d43cd5?w=400",
-                    lat: 48.208889,
-                    lng: 16.369444,
-                    price: "N/A",
-                    hours: "10:00-19:00",
-                    distance: 0
-                },
-                {
-                    name: "Mariahilfer Straße",
-                    description: "Via commerciale più lunga (1.8 km) con oltre 200 negozi.",
-                    image: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400",
-                    lat: 48.196944,
-                    lng: 16.340278,
-                    price: "N/A",
-                    hours: "10:00-20:00",
-                    distance: 0
-                },
-                {
-                    name: "Ringstrassen-Galerien",
-                    description: "Centro commerciale elegante vicino all'Opera con 70 negozi.",
-                    image: "https://images.unsplash.com/photo-1567449303078-ab8b2e6e8e99?w=400",
-                    lat: 48.202500,
-                    lng: 16.371389,
-                    price: "N/A",
-                    hours: "10:00-20:00",
-                    distance: 0
-                }
-            ]
-        };
+    <input type="text" class="search-bar" placeholder="🔍 Cerca monumenti, ristoranti, attrazioni..." id="searchBar">
 
-        // Inizializza la mappa
-        let map;
-        let markers = [];
-        let currentCategory = 'monuments';
-        let userMarker = null;
-        let userLocation = null;
-        let watchId = null;
-        let currentSort = 'default';
+    <div class="sort-options">
+      <span style="font-weight:bold;">Ordina per:</span>
+      <button class="sort-btn active" data-sort="default">Default</button>
+      <button class="sort-btn" data-sort="distance">Distanza da me</button>
+      <button class="sort-btn" data-sort="name">Nome A-Z</button>
+    </div>
 
-        function initMap() {
-            map = L.map('map').setView([hotelLocation.lat, hotelLocation.lng], 14);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+    <div class="filter-options">
+      <div class="filter-chip" data-filter="free">Gratuito</div>
+      <div class="filter-chip" data-filter="paid">A pagamento</div>
+      <div class="filter-chip" data-filter="walking">&lt; 500m a piedi</div>
+      <div class="filter-chip" data-filter="transport">&gt; 500m trasporti</div>
+    </div>
 
-            // Marker hotel con icona speciale
-            const hotelIcon = L.divIcon({
-                html: '<div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 8px; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 3px 10px rgba(0,0,0,0.3);">🏨</div>',
-                iconSize: [40, 40],
-                iconAnchor: [20, 20]
-            });
-            
-            L.marker([hotelLocation.lat, hotelLocation.lng], {icon: hotelIcon})
-                .addTo(map)
-                .bindPopup(`<strong>${hotelLocation.name}</strong><br>${hotelLocation.address}`)
-                .openPopup();
+    <div class="categories">
+      <button class="category-btn active" data-category="monuments">🏛️ Monumenti</button>
+      <button class="category-btn" data-category="museums">🎨 Musei</button>
+      <button class="category-btn" data-category="restaurants">🍽️ Ristoranti</button>
+      <button class="category-btn" data-category="fastfood">🍔 Fast Food</button>
+      <button class="category-btn" data-category="parks">🌳 Parchi</button>
+      <button class="category-btn" data-category="shopping">🛍️ Shopping</button>
+    </div>
 
-            // Inizializza geolocalizzazione
-            initGeolocation();
+    <div class="places-grid" id="placesGrid"></div>
+  </div>
+
+  <!-- Modal navigazione -->
+  <div id="navigationModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="modalTitle">Navigazione</h2>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // ====== Dati hotel ======
+    const hotelLocation = {
+      lat: 48.216837,
+      lng: 16.345621,
+      name: "Boutique Hotel Das Tigra",
+      address: "Tiefer Graben 14-20, 1010 Wien"
+    };
+
+    // ====== Database luoghi (identico al tuo) ======
+    const places = {
+      monuments: [
+        { name:"Palazzo di Schönbrunn", description:"Residenza imperiale barocca con 1.441 stanze, patrimonio UNESCO. Giardini magnifici e zoo.", image:"https://images.unsplash.com/photo-1516550893923-42d28e5677af?w=400", lat:48.184517, lng:16.312148, price:"€16", hours:"8:30-17:30", distance:0 },
+        { name:"Cattedrale di Santo Stefano", description:"Simbolo di Vienna, cattedrale gotica del XII secolo con torre alta 136 metri.", image:"https://images.unsplash.com/photo-1609856878074-cf31e21ccb6b?w=400", lat:48.208492, lng:16.373119, price:"Gratuito (Torre €6)", hours:"6:00-22:00", distance:0 },
+        { name:"Hofburg", description:"Complesso imperiale con musei, biblioteca nazionale e scuola di equitazione spagnola.", image:"https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=400", lat:48.206507, lng:16.365262, price:"€15", hours:"9:00-17:30", distance:0 },
+        { name:"Belvedere", description:"Complesso barocco con due palazzi e giardini. Ospita 'Il Bacio' di Klimt.", image:"https://images.unsplash.com/photo-1583225173839-59b4e437f4d4?w=400", lat:48.191567, lng:16.380995, price:"€16", hours:"10:00-18:00", distance:0 },
+        { name:"Prater e Ruota Panoramica", description:"Parco divertimenti storico con l'iconica ruota panoramica del 1897.", image:"https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=400", lat:48.216571, lng:16.395776, price:"€13.50", hours:"10:00-22:00", distance:0 },
+        { name:"Opera di Stato di Vienna", description:"Uno dei teatri d'opera più importanti al mondo, inaugurato nel 1869.", image:"https://images.unsplash.com/photo-1544320824-8db57da2fa97?w=400", lat:48.203001, lng:16.369002, price:"Tour €13", hours:"Tour: 10:00-15:00", distance:0 },
+        { name:"Palazzo del Parlamento", description:"Edificio neoclassico sede del Parlamento austriaco con statue greche.", image:"https://images.unsplash.com/photo-1548802673-5abd0ff47c09?w=400", lat:48.207788, lng:16.357613, price:"Tour gratuito", hours:"Lun-Sab con prenotazione", distance:0 },
+        { name:"Rathaus (Municipio)", description:"Imponente municipio neogotico con torre di 98 metri e piazza per eventi.", image:"https://images.unsplash.com/photo-1580836507615-96f7f7950e3b?w=400", lat:48.210577, lng:16.357420, price:"Gratuito", hours:"Tour Lun, Mer, Ven 13:00", distance:0 }
+      ],
+      museums: [
+        { name:"Kunsthistorisches Museum", description:"Uno dei musei d'arte più importanti al mondo con opere di Raffaello, Vermeer, Velázquez.", image:"https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=400", lat:48.203551, lng:16.361587, price:"€21", hours:"10:00-18:00 (Gio fino 21:00)", distance:0 },
+        { name:"Albertina", description:"Collezione grafica più grande al mondo con opere di Monet, Picasso, Klimt.", image:"https://images.unsplash.com/photo-1583037189850-1921ae7c6c22?w=400", lat:48.204731, lng:16.368438, price:"€18.90", hours:"10:00-18:00 (Mer, Ven fino 21:00)", distance:0 },
+        { name:"Museo di Storia Naturale", description:"30 milioni di oggetti esposti inclusi dinosauri e la Venere di Willendorf.", image:"https://images.unsplash.com/photo-1613414969929-491c9c779910?w=400", lat:48.205268, lng:16.359989, price:"€16", hours:"9:00-18:00 (Mer fino 20:00)", distance:0 },
+        { name:"MAK - Museo Arti Applicate", description:"Design, architettura e arte contemporanea. Collezione unica di Wiener Werkstätte.", image:"https://images.unsplash.com/photo-1541367777708-c1ccbfb0e6d5?w=400", lat:48.207395, lng:16.381705, price:"€15", hours:"10:00-18:00 (Mar fino 21:00)", distance:0 }
+      ],
+      restaurants: [
+        { name:"Figlmüller", description:"Famoso per la schnitzel più grande di Vienna, tradizione dal 1905.", image:"https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400", lat:48.208765, lng:16.374526, price:"€€€", hours:"11:00-22:30", distance:0 },
+        { name:"Café Central", description:"Storico caffè viennese frequentato da Freud e Trotsky. Torte imperiali.", image:"https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400", lat:48.210372, lng:16.365063, price:"€€", hours:"7:30-22:00", distance:0 },
+        { name:"Plachutta Wollzeile", description:"Specialità: Tafelspitz (bollito di manzo), cucina tradizionale austriaca.", image:"https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400", lat:48.208492, lng:16.376798, price:"€€€", hours:"11:30-23:00", distance:0 },
+        { name:"Zum Schwarzen Kameel", description:"Dal 1618, ristorante Art Nouveau con specialità austriache e wine bar.", image:"https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=400", lat:48.210833, lng:16.367778, price:"€€€€", hours:"8:00-24:00", distance:0 },
+        { name:"Café Sacher", description:"Casa della torta Sachertorte originale, elegante caffè dal 1876.", image:"https://images.unsplash.com/photo-1550916478-59a58fe5e873?w=400", lat:48.203889, lng:16.369444, price:"€€€", hours:"8:00-24:00", distance:0 }
+      ],
+      fastfood: [
+        { name:"McDonald's Stephansplatz", description:"McDonald's nel cuore di Vienna, vicino alla cattedrale. Menu classici e specialità austriache.", image:"https://images.unsplash.com/photo-1552895638-f7fe08d2f7d5?w=400", lat:48.208556, lng:16.373139, price:"€", hours:"6:00-1:00 (Ven-Sab fino 3:00)", distance:0 },
+        { name:"McDonald's Hauptbahnhof", description:"Grande McDonald's nella stazione centrale. Ideale per viaggiatori.", image:"https://images.unsplash.com/photo-1552895638-f7fe08d2f7d5?w=400", lat:48.185252, lng:16.377482, price:"€", hours:"24 ore", distance:0 },
+        { name:"McDonald's Praterstern", description:"Vicino al Prater e alla ruota panoramica. McCafé incluso.", image:"https://images.unsplash.com/photo-1552895638-f7fe08d2f7d5?w=400", lat:48.218765, lng:16.391944, price:"€", hours:"24 ore", distance:0 },
+        { name:"Burger King Mariahilferstraße", description:"Burger King sulla principale via dello shopping. Terrazza esterna.", image:"https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400", lat:48.196389, lng:16.340556, price:"€", hours:"8:00-24:00", distance:0 },
+        { name:"Burger King Wien Mitte", description:"Nel centro commerciale Wien Mitte The Mall. Comodo per i trasporti.", image:"https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400", lat:48.205833, lng:16.384167, price:"€", hours:"9:00-23:00", distance:0 },
+        { name:"McDonald's Schwedenplatz", description:"Vista sul canale del Danubio. Vicino alla vita notturna.", image:"https://images.unsplash.com/photo-1552895638-f7fe08d2f7d5?w=400", lat:48.211667, lng:16.377500, price:"€", hours:"7:00-2:00 (Ven-Sab 24h)", distance:0 },
+        { name:"Burger King Westbahnhof", description:"Nella stazione Westbahnhof. Menu King Deal conveniente.", image:"https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400", lat:48.196944, lng:16.338889, price:"€", hours:"6:00-24:00", distance:0 },
+        { name:"McDonald's Kärntner Straße", description:"Sulla via pedonale dello shopping. 3 piani con vista città.", image:"https://images.unsplash.com/photo-1552895638-f7fe08d2f7d5?w=400", lat:48.204722, lng:16.370833, price:"€", hours:"7:00-1:00", distance:0 },
+        { name:"Bitzinger Würstelstand", description:"Chiosco di salsicce leggendario dietro l'Opera. Käsekrainer e champagne!", image:"https://images.unsplash.com/photo-1566843972142-a7fcb70de55a?w=400", lat:48.202778, lng:16.368889, price:"€", hours:"8:00-4:00", distance:0 },
+        { name:"Naschmarkt", description:"Mercato con oltre 100 bancarelle di street food internazionale.", image:"https://images.unsplash.com/photo-1567089684019-78f86ebc0de1?w=400", lat:48.198634, lng:16.362892, price:"€-€€", hours:"6:00-21:00 (Dom chiuso)", distance:0 },
+        { name:"Trzesniewski", description:"Mini-sandwich gourmet dal 1902. 22 varietà diverse.", image:"https://images.unsplash.com/photo-1553909489-cd47e0907e35?w=400", lat:48.209167, lng:16.370278, price:"€", hours:"8:30-19:00", distance:0 },
+        { name:"Burgerista", description:"Burger gourmet austriaci con ingredienti biologici locali.", image:"https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400", lat:48.200278, lng:16.369722, price:"€€", hours:"11:00-23:00", distance:0 }
+      ],
+      parks: [
+        { name:"Stadtpark", description:"Parco più fotografato di Vienna con statua dorata di Johann Strauss.", image:"https://images.unsplash.com/photo-1590682244746-d7b27e6a5c9b?w=400", lat:48.204722, lng:16.378611, price:"Gratuito", hours:"Sempre aperto", distance:0 },
+        { name:"Volksgarten", description:"Giardino delle rose con oltre 3000 rosai e Tempio di Teseo.", image:"https://images.unsplash.com/photo-1559128019-7c1dd7c9eefd?w=400", lat:48.207778, lng:16.361111, price:"Gratuito", hours:"Sempre aperto", distance:0 },
+        { name:"Augarten", description:"Parco barocco con torre antiaerea e sede dei Piccoli Cantori di Vienna.", image:"https://images.unsplash.com/photo-1589207821092-9ce3f6132eb9?w=400", lat:48.226111, lng:16.380278, price:"Gratuito", hours:"Sempre aperto", distance:0 }
+      ],
+      shopping: [
+        { name:"Graben & Kohlmarkt", description:"Via dello shopping di lusso con boutique esclusive e gioiellerie.", image:"https://images.unsplash.com/photo-1520176501380-c1d889d43cd5?w=400", lat:48.208889, lng:16.369444, price:"N/A", hours:"10:00-19:00", distance:0 },
+        { name:"Mariahilfer Straße", description:"Via commerciale più lunga (1.8 km) con oltre 200 negozi.", image:"https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400", lat:48.196944, lng:16.340278, price:"N/A", hours:"10:00-20:00", distance:0 },
+        { name:"Ringstrassen-Galerien", description:"Centro commerciale elegante vicino all'Opera con 70 negozi.", image:"https://images.unsplash.com/photo-1567449303078-ab8b2e6e8e99?w=400", lat:48.202500, lng:16.371389, price:"N/A", hours:"10:00-20:00", distance:0 }
+      ]
+    };
+
+    // ====== Stato e mappa ======
+    let map, markers = [], currentCategory = 'monuments';
+    let userMarker = null, userLocation = null, watchId = null, currentSort = 'default';
+
+    function initMap(){
+      map = L.map('map').setView([hotelLocation.lat, hotelLocation.lng], 14);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution:'© OpenStreetMap contributors'
+      }).addTo(map);
+
+      const hotelIcon = L.divIcon({
+        html:'<div style="background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:#fff;padding:8px;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 3px 10px rgba(0,0,0,.3);">🏨</div>',
+        iconSize:[40,40], iconAnchor:[20,20]
+      });
+
+      L.marker([hotelLocation.lat, hotelLocation.lng], {icon:hotelIcon})
+        .addTo(map)
+        .bindPopup(`<strong>${hotelLocation.name}</strong><br>${hotelLocation.address}`)
+        .openPopup();
+
+      initGeolocation();
+    }
+
+    function initGeolocation(){
+      if("geolocation" in navigator){
+        navigator.geolocation.getCurrentPosition(
+          (position)=>{
+            updateUserLocation(position.coords.latitude, position.coords.longitude);
+            startLocationTracking();
+          },
+          (error)=>{ console.log("Geolocalizzazione non disponibile o negata:", error); },
+          { enableHighAccuracy:true }
+        );
+      }
+    }
+
+    function startLocationTracking(){
+      if("geolocation" in navigator){
+        watchId = navigator.geolocation.watchPosition(
+          (position)=>{ updateUserLocation(position.coords.latitude, position.coords.longitude); },
+          (error)=>{ console.error("Errore tracking posizione:", error); },
+          { enableHighAccuracy:true, timeout:5000, maximumAge:0 }
+        );
+        document.getElementById('locationStatus').classList.add('active');
+        document.getElementById('locationBtn').classList.add('active');
+      }
+    }
+
+    function updateUserLocation(lat,lng){
+      userLocation = {lat,lng};
+      if(userMarker){ map.removeLayer(userMarker); }
+      const userIcon = L.divIcon({
+        html:`<div style="position:relative;">
+                <div style="background:#2196F3;border:3px solid #fff;border-radius:50%;width:20px;height:20px;box-shadow:0 2px 5px rgba(0,0,0,.3);"></div>
+                <div style="position:absolute;top:-5px;left:-5px;width:30px;height:30px;border:2px solid #2196F3;border-radius:50%;opacity:.3;animation:pulse 2s infinite;"></div>
+              </div>`,
+        iconSize:[30,30], iconAnchor:[15,15]
+      });
+      userMarker = L.marker([lat,lng], {icon:userIcon}).addTo(map).bindPopup("<strong>La tua posizione</strong>");
+      updateDistancesFromUser();
+      if(currentSort === 'distance'){
+        renderPlaces(currentCategory, document.getElementById('searchBar').value);
+      }
+    }
+
+    function centerOnUser(){
+      if(userLocation){
+        map.setView([userLocation.lat, userLocation.lng], 16);
+        if(userMarker){ userMarker.openPopup(); }
+      }else if("geolocation" in navigator){
+        navigator.geolocation.getCurrentPosition(
+          (position)=>{
+            updateUserLocation(position.coords.latitude, position.coords.longitude);
+            map.setView([position.coords.latitude, position.coords.longitude], 16);
+            startLocationTracking();
+          },
+          ()=>{ alert("Per favore abilita la geolocalizzazione nel tuo browser"); }
+        );
+      }
+    }
+
+    function calculateDistance(lat1,lon1,lat2,lon2){
+      const R = 6371e3;
+      const φ1 = lat1*Math.PI/180, φ2 = lat2*Math.PI/180;
+      const Δφ = (lat2-lat1)*Math.PI/180, Δλ = (lon2-lon1)*Math.PI/180;
+      const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+      const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R*c;
+    }
+
+    function updateDistances(){
+      Object.keys(places).forEach(cat=>{
+        places[cat].forEach(p=>{
+          p.distance = Math.round(calculateDistance(hotelLocation.lat, hotelLocation.lng, p.lat, p.lng));
+        });
+      });
+    }
+
+    function updateDistancesFromUser(){
+      if(!userLocation) return;
+      Object.keys(places).forEach(cat=>{
+        places[cat].forEach(p=>{
+          p.distanceFromUser = Math.round(calculateDistance(userLocation.lat, userLocation.lng, p.lat, p.lng));
+        });
+      });
+    }
+
+    function showPlacesOnMap(category){
+      markers.forEach(m=>map.removeLayer(m));
+      markers = [];
+      const categoryEmojis = { monuments:'🏛️', museums:'🎨', restaurants:'🍽️', fastfood:'🍔', parks:'🌳', shopping:'🛍️' };
+
+      places[category].forEach(place=>{
+        let emoji = categoryEmojis[category];
+        let bg = 'linear-gradient(135deg,#667eea 0%,#764ba2 100%)';
+        if(category==='fastfood'){
+          if(place.name.toLowerCase().includes('mcdonald')){ emoji='M'; bg='linear-gradient(135deg,#FFC600 0%,#FF0000 100%)'; }
+          else if(place.name.toLowerCase().includes('burger king')){ emoji='BK'; bg='linear-gradient(135deg,#FF6900 0%,#8B4513 100%)'; }
         }
-
-        // Inizializza geolocalizzazione
-        function initGeolocation() {
-            if ("geolocation" in navigator) {
-                // Richiedi permesso e ottieni posizione
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        updateUserLocation(position.coords.latitude, position.coords.longitude);
-                        startLocationTracking();
-                    },
-                    (error) => {
-                        console.log("Geolocalizzazione non disponibile o permesso negato:", error);
-                    },
-                    { enableHighAccuracy: true }
-                );
-            }
-        }
-
-        // Tracciamento continuo della posizione
-        function startLocationTracking() {
-            if ("geolocation" in navigator) {
-                watchId = navigator.geolocation.watchPosition(
-                    (position) => {
-                        updateUserLocation(position.coords.latitude, position.coords.longitude);
-                    },
-                    (error) => {
-                        console.error("Errore tracking posizione:", error);
-                    },
-                    { 
-                        enableHighAccuracy: true,
-                        timeout: 5000,
-                        maximumAge: 0
-                    }
-                );
-                
-                document.getElementById('locationStatus').classList.add('active');
-                document.getElementById('locationBtn').classList.add('active');
-            }
-        }
-
-        // Aggiorna posizione utente
-        function updateUserLocation(lat, lng) {
-            userLocation = { lat, lng };
-            
-            // Rimuovi marker precedente
-            if (userMarker) {
-                map.removeLayer(userMarker);
-            }
-            
-            // Crea icona per posizione utente
-            const userIcon = L.divIcon({
-                html: `<div style="position: relative;">
-                    <div style="background: #2196F3; border: 3px solid white; border-radius: 50%; width: 20px; height: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>
-                    <div style="position: absolute; top: -5px; left: -5px; width: 30px; height: 30px; border: 2px solid #2196F3; border-radius: 50%; opacity: 0.3; animation: pulse 2s infinite;"></div>
-                </div>`,
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
-            });
-            
-            userMarker = L.marker([lat, lng], {icon: userIcon})
-                .addTo(map)
-                .bindPopup("<strong>La tua posizione</strong>");
-            
-            // Aggiorna distanze
-            updateDistancesFromUser();
-            
-            // Se è ordinato per distanza, riordina
-            if (currentSort === 'distance') {
-                renderPlaces(currentCategory, document.getElementById('searchBar').value);
-            }
-        }
-
-        // Centra mappa sulla posizione utente
-        function centerOnUser() {
-            if (userLocation) {
-                map.setView([userLocation.lat, userLocation.lng], 16);
-                if (userMarker) {
-                    userMarker.openPopup();
-                }
-            } else {
-                // Riprova a ottenere la posizione
-                if ("geolocation" in navigator) {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            updateUserLocation(position.coords.latitude, position.coords.longitude);
-                            map.setView([position.coords.latitude, position.coords.longitude], 16);
-                            startLocationTracking();
-                        },
-                        (error) => {
-                            alert("Per favore abilita la geolocalizzazione nel tuo browser");
-                        }
-                    );
-                }
-            }
-        }
-
-        // Calcola distanza tra due punti
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3;
-            const φ1 = lat1 * Math.PI/180;
-            const φ2 = lat2 * Math.PI/180;
-            const Δφ = (lat2-lat1) * Math.PI/180;
-            const Δλ = (lon2-lon1) * Math.PI/180;
-
-            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                    Math.cos(φ1) * Math.cos(φ2) *
-                    Math.sin(Δλ/2) * Math.sin(Δλ/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-            return R * c;
-        }
-
-        // Aggiorna distanze dall'hotel
-        function updateDistances() {
-            Object.keys(places).forEach(category => {
-                places[category].forEach(place => {
-                    place.distance = Math.round(calculateDistance(
-                        hotelLocation.lat, hotelLocation.lng,
-                        place.lat, place.lng
-                    ));
-                });
-            });
-        }
-
-        // Aggiorna distanze dalla posizione utente
-        function updateDistancesFromUser() {
-            if (!userLocation) return;
-            
-            Object.keys(places).forEach(category => {
-                places[category].forEach(place => {
-                    place.distanceFromUser = Math.round(calculateDistance(
-                        userLocation.lat, userLocation.lng,
-                        place.lat, place.lng
-                    ));
-                });
-            });
-        }
-
-        // Mostra luoghi sulla mappa con icone diverse per McDonald's e Burger King
-        function showPlacesOnMap(category) {
-            // Rimuovi marker esistenti
-            markers.forEach(marker => map.removeLayer(marker));
-            markers = [];
-
-            const categoryEmojis = {
-                monuments: '🏛️',
-                museums: '🎨',
-                restaurants: '🍽️',
-                fastfood: '🍔',
-                parks: '🌳',
-                shopping: '🛍️'
-            };
-
-            places[category].forEach(place => {
-                let emoji = categoryEmojis[category];
-                let bgColor = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                
-                // Icone speciali per McDonald's e Burger King
-                if (category === 'fastfood') {
-                    if (place.name.toLowerCase().includes('mcdonald')) {
-                        emoji = 'M';
-                        bgColor = 'linear-gradient(135deg, #FFC600 0%, #FF0000 100%)';
-                    } else if (place.name.toLowerCase().includes('burger king')) {
-                        emoji = 'BK';
-                        bgColor = 'linear-gradient(135deg, #FF6900 0%, #8B4513 100%)';
-                    }
-                }
-                
-                const icon = L.divIcon({
-                    html: `<div style="background: ${bgColor}; color: white; padding: 5px; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: ${emoji.length > 1 ? '10px' : '16px'}; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">${emoji}</div>`,
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 15]
-                });
-                
-                const marker = L.marker([place.lat, place.lng], {icon: icon})
-                    .addTo(map)
-                    .bindPopup(`
-                        <strong>${place.name}</strong><br>
-                        ${place.description.substring(0, 100)}...<br>
-                        <strong>Distanza:</strong> ${place.distance}m<br>
-                        <strong>Prezzo:</strong> ${place.price}<br>
-                        <strong>Orari:</strong> ${place.hours}
-                    `);
-                
-                markers.push(marker);
-            });
-        }
-
-        // Renderizza le card dei luoghi
-        function renderPlaces(category, searchTerm = '', filters = []) {
-            const grid = document.getElementById('placesGrid');
-            let filteredPlaces = places[category] || [];
-            
-            // Applica ricerca
-            if (searchTerm) {
-                filteredPlaces = filteredPlaces.filter(place => 
-                    place.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    place.description.toLowerCase().includes(searchTerm.toLowerCase())
-                );
-            }
-            
-            // Applica filtri
-            if (filters.length > 0) {
-                filteredPlaces = filteredPlaces.filter(place => {
-                    let passFilter = true;
-                    filters.forEach(filter => {
-                        if (filter === 'free' && !place.price.toLowerCase().includes('gratuito')) {
-                            passFilter = false;
-                        }
-                        if (filter === 'paid' && place.price.toLowerCase().includes('gratuito')) {
-                            passFilter = false;
-                        }
-                        if (filter === 'walking' && place.distance > 500) {
-                            passFilter = false;
-                        }
-                        if (filter === 'transport' && place.distance <= 500) {
-                            passFilter = false;
-                        }
-                    });
-                    return passFilter;
-                });
-            }
-            
-            // Applica ordinamento
-            if (currentSort === 'distance' && userLocation) {
-                filteredPlaces.sort((a, b) => (a.distanceFromUser || 999999) - (b.distanceFromUser || 999999));
-            } else if (currentSort === 'name') {
-                filteredPlaces.sort((a, b) => a.name.localeCompare(b.name));
-            }
-            
-            grid.innerHTML = filteredPlaces.map(place => {
-                const useUserLocation = userLocation && currentSort === 'distance';
-                const currentDistance = useUserLocation ? (place.distanceFromUser || place.distance) : place.distance;
-                const transportType = currentDistance <= 500 ? '🚶 A piedi' : '🚇 Mezzi pubblici';
-                const transportColor = currentDistance <= 500 ? '#4CAF50' : '#2196F3';
-                const priceClass = place.price.toLowerCase().includes('gratuito') ? 'free-badge' : '';
-                
-                let distanceInfo = `${place.distance}m dall'hotel`;
-                if (userLocation && place.distanceFromUser !== undefined) {
-                    distanceInfo += `<span class="distance-from-me">📍 ${place.distanceFromUser}m da te</span>`;
-                }
-                
-                return `
-                    <div class="place-card">
-                        <img src="${place.image}" alt="${place.name}" class="place-image">
-                        <div class="place-info">
-                            <div class="place-name">${place.name}</div>
-                            <div class="place-description">${place.description}</div>
-                            <div class="place-details">
-                                <div class="detail-item">
-                                    <span class="detail-icon">📍</span>
-                                    <span>${distanceInfo}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="distance-badge" style="background: ${transportColor};">
-                                        ${transportType}
-                                    </span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-icon">💰</span>
-                                    <span class="price-badge ${priceClass}">${place.price}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-icon">🕐</span>
-                                    <span>${place.hours}</span>
-                                </div>
-                            </div>
-                            <button class="navigate-btn" onclick="showNavigationModal('${place.name.replace(/'/g, "\\'")}', ${place.lat}, ${place.lng}, ${currentDistance}, ${useUserLocation})">
-                                📍 Indicazioni Stradali
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            if (filteredPlaces.length === 0) {
-                grid.innerHTML = '<div class="loading">Nessun risultato trovato per i filtri selezionati.</div>';
-            }
-        }
-
-        // Modal navigazione - Faccio questa funzione globale
-        window.showNavigationModal = function(placeName, lat, lng, distance) {
-            const modal = document.getElementById('navigationModal');
-            const modalTitle = document.getElementById('modalTitle');
-            const modalBody = document.getElementById('modalBody');
-            
-            modalTitle.textContent = `Navigazione verso ${placeName}`;
-            
-            let navigationOptions = '';
-            
-            if (distance <= 500) {
-                navigationOptions = `
-                    <div class="navigation-options">
-                        <h3>🚶 Percorso a piedi (${distance}m - circa ${Math.round(distance/80)} minuti)</h3>
-                        <div class="nav-option" onclick="openGoogleMaps(${lat}, ${lng}, 'walking')">
-                            <h4>Google Maps - A piedi</h4>
-                            <p>Ottieni indicazioni dettagliate per camminare</p>
-                        </div>
-                        <div class="nav-option" onclick="openAppleMaps(${lat}, ${lng}, 'walking')">
-                            <h4>Apple Maps - A piedi</h4>
-                            <p>Per dispositivi iOS</p>
-                        </div>
-                        <hr style="margin: 20px 0; border: 1px solid #eee;">
-                        <p style="color: #666; font-size: 14px;">
-                            <strong>Suggerimento:</strong> Il percorso è breve e Vienna è una città molto pedonale. 
-                            Ti consigliamo di camminare per goderti l'atmosfera della città!
-                        </p>
-                    </div>
-                `;
-            } else {
-                const walkingTime = Math.round(distance/80);
-                const transitTime = Math.round(distance/250);
-                
-                navigationOptions = `
-                    <div class="navigation-options">
-                        <h3>🚇 Percorso consigliato con mezzi pubblici</h3>
-                        <div class="nav-option" onclick="openGoogleMaps(${lat}, ${lng}, 'transit')">
-                            <h4>Google Maps - Mezzi pubblici</h4>
-                            <p>Metro U-Bahn, Tram o Bus (circa ${transitTime} minuti)</p>
-                        </div>
-                        <div class="nav-option" onclick="openWienerLinien(${lat}, ${lng})">
-                            <h4>Wiener Linien - App ufficiale trasporti Vienna</h4>
-                            <p>Biglietti e orari in tempo reale</p>
-                        </div>
-                        <div class="nav-option" onclick="openUber(${lat}, ${lng})">
-                            <h4>Uber / Taxi</h4>
-                            <p>Opzione più veloce ma più costosa</p>
-                        </div>
-                        <hr style="margin: 20px 0; border: 1px solid #eee;">
-                        <h3>🚶 Alternativa a piedi (${distance}m - circa ${walkingTime} minuti)</h3>
-                        <div class="nav-option" onclick="openGoogleMaps(${lat}, ${lng}, 'walking')">
-                            <h4>Google Maps - A piedi</h4>
-                            <p>Se preferisci camminare</p>
-                        </div>
-                        <hr style="margin: 20px 0; border: 1px solid #eee;">
-                        <p style="color: #666; font-size: 14px;">
-                            <strong>Biglietti trasporti:</strong><br>
-                            • Biglietto singolo: €2.40<br>
-                            • Giornaliero: €8.00<br>
-                            • Vienna Card 48h: €25 (trasporti + sconti musei)
-                        </p>
-                    </div>
-                `;
-            }
-            
-            modalBody.innerHTML = navigationOptions;
-            modal.style.display = 'block';
-        }
-
-        // Funzioni per aprire app di navigazione - Le rendo globali
-        window.openGoogleMaps = function(lat, lng, mode) {
-            const url = `https://www.google.com/maps/dir/${hotelLocation.lat},${hotelLocation.lng}/${lat},${lng}/@${lat},${lng},15z/data=!4m2!4m1!3e${mode === 'walking' ? '2' : '3'}`;
-            window.open(url, '_blank');
-        }
-
-        window.openAppleMaps = function(lat, lng, mode) {
-            const url = `maps://maps.apple.com/maps?saddr=${hotelLocation.lat},${hotelLocation.lng}&daddr=${lat},${lng}&dirflg=${mode === 'walking' ? 'w' : 'r'}`;
-            window.open(url, '_blank');
-        }
-
-        window.openWienerLinien = function(lat, lng) {
-            const url = `https://www.wienerlinien.at/web/wl-en/journey-planner?from=${hotelLocation.lat},${hotelLocation.lng}&to=${lat},${lng}`;
-            window.open(url, '_blank');
-        }
-
-        window.openUber = function(lat, lng, startLat, startLng) {
-            startLat = startLat || hotelLocation.lat;
-            startLng = startLng || hotelLocation.lng;
-            const url = `https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${startLat}&pickup[longitude]=${startLng}&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}`;
-            window.open(url, '_blank');
-        }
-
-        // Event listeners
-        document.addEventListener('DOMContentLoaded', function() {
-            initMap();
-            updateDistances();
-            renderPlaces('monuments');
-            showPlacesOnMap('monuments');
-            
-            // Pulsante posizione
-            document.getElementById('locationBtn').addEventListener('click', centerOnUser);
-            
-            // Gestione categorie
-            document.querySelectorAll('.category-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    currentCategory = this.dataset.category;
-                    renderPlaces(currentCategory);
-                    showPlacesOnMap(currentCategory);
-                });
-            });
-            
-            // Gestione ordinamento
-            document.querySelectorAll('.sort-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    currentSort = this.dataset.sort;
-                    
-                    // Se ordina per distanza e non c'è geolocalizzazione, attivala
-                    if (currentSort === 'distance' && !userLocation) {
-                        centerOnUser();
-                    }
-                    
-                    renderPlaces(currentCategory, document.getElementById('searchBar').value);
-                });
-            });
-            
-            // Ricerca
-            document.getElementById('searchBar').addEventListener('input', function(e) {
-                renderPlaces(currentCategory, e.target.value);
-            });
-            
-            // Filtri
-            const activeFilters = [];
-            document.querySelectorAll('.filter-chip').forEach(chip => {
-                chip.addEventListener('click', function() {
-                    const filter = this.dataset.filter;
-                    if (this.classList.contains('active')) {
-                        this.classList.remove('active');
-                        const index = activeFilters.indexOf(filter);
-                        if (index > -1) activeFilters.splice(index, 1);
-                    } else {
-                        this.classList.add('active');
-                        activeFilters.push(filter);
-                    }
-                    renderPlaces(currentCategory, document.getElementById('searchBar').value, activeFilters);
-                });
-            });
-            
-            // Chiudi modal
-            document.querySelector('.close').addEventListener('click', function() {
-                document.getElementById('navigationModal').style.display = 'none';
-            });
-            
-            window.addEventListener('click', function(e) {
-                const modal = document.getElementById('navigationModal');
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
+        const icon = L.divIcon({
+          html:`<div style="background:${bg};color:#fff;padding:5px;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:${emoji.length>1?'10px':'16px'};font-weight:bold;box-shadow:0 2px 6px rgba(0,0,0,.3);">${emoji}</div>`,
+          iconSize:[30,30], iconAnchor:[15,15]
         });
 
-        // Aggiorna la mappa al resize
-        window.addEventListener('resize', function() {
-            if (map) map.invalidateSize();
+        const marker = L.marker([place.lat, place.lng], {icon})
+          .addTo(map)
+          .bindPopup(`
+            <strong>${place.name}</strong><br>
+            ${place.description.substring(0,100)}...<br>
+            <strong>Distanza:</strong> ${place.distance}m<br>
+            <strong>Prezzo:</strong> ${place.price}<br>
+            <strong>Orari:</strong> ${place.hours}
+          `);
+        markers.push(marker);
+      });
+    }
+
+    function renderPlaces(category, searchTerm='', filters=[]){
+      const grid = document.getElementById('placesGrid');
+      let list = places[category] || [];
+
+      if(searchTerm){
+        const s = searchTerm.toLowerCase();
+        list = list.filter(p => p.name.toLowerCase().includes(s) || p.description.toLowerCase().includes(s));
+      }
+
+      if(filters.length){
+        list = list.filter(p=>{
+          let pass = true;
+          filters.forEach(f=>{
+            if(f==='free' && !p.price.toLowerCase().includes('gratuito')) pass=false;
+            if(f==='paid' && p.price.toLowerCase().includes('gratuito')) pass=false;
+            if(f==='walking' && p.distance > 500) pass=false;
+            if(f==='transport' && p.distance <= 500) pass=false;
+          });
+          return pass;
         });
-        
-        // Pulisci il tracking quando la pagina si chiude
-        window.addEventListener('beforeunload', function() {
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-            }
+      }
+
+      if(currentSort==='distance' && userLocation){
+        list.sort((a,b)=> (a.distanceFromUser||999999)-(b.distanceFromUser||999999));
+      }else if(currentSort==='name'){
+        list.sort((a,b)=> a.name.localeCompare(b.name));
+      }
+
+      grid.innerHTML = list.map(place=>{
+        const useUserLocation = !!userLocation && currentSort==='distance';
+        const currentDistance = useUserLocation ? (place.distanceFromUser ?? place.distance) : place.distance;
+        const transportType = currentDistance<=500 ? '🚶 A piedi' : '🚇 Mezzi pubblici';
+        const transportColor = currentDistance<=500 ? '#4CAF50' : '#2196F3';
+        const priceClass = place.price.toLowerCase().includes('gratuito') ? 'free-badge' : '';
+
+        let distanceInfo = `${place.distance}m dall'hotel`;
+        if(userLocation && place.distanceFromUser!==undefined){
+          distanceInfo += `<span class="distance-from-me">📍 ${place.distanceFromUser}m da te</span>`;
+        }
+
+        return `
+          <div class="place-card">
+            <img src="${place.image}" alt="${place.name}" class="place-image">
+            <div class="place-info">
+              <div class="place-name">${place.name}</div>
+              <div class="place-description">${place.description}</div>
+              <div class="place-details">
+                <div class="detail-item"><span>📍</span><span>${distanceInfo}</span></div>
+                <div class="detail-item"><span class="distance-badge" style="background:${transportColor};">${transportType}</span></div>
+                <div class="detail-item"><span>💰</span><span class="price-badge ${priceClass}">${place.price}</span></div>
+                <div class="detail-item"><span>🕐</span><span>${place.hours}</span></div>
+              </div>
+              <button class="navigate-btn"
+                onclick="showNavigationModal('${place.name.replace(/'/g, "\\'")}', ${place.lat}, ${place.lng}, ${currentDistance}, ${useUserLocation})">
+                📍 Indicazioni Stradali
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if(!list.length){
+        grid.innerHTML = '<div class="loading">Nessun risultato trovato per i filtri selezionati.</div>';
+      }
+    }
+
+    // ====== Modal navigazione (UNICA versione, con scelta partenza) ======
+    window.showNavigationModal = function(placeName, lat, lng, distance, fromUserLocation=false){
+      const modal = document.getElementById('navigationModal');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalBody = document.getElementById('modalBody');
+
+      const startLat = (fromUserLocation && userLocation) ? userLocation.lat : hotelLocation.lat;
+      const startLng = (fromUserLocation && userLocation) ? userLocation.lng : hotelLocation.lng;
+      const startName = (fromUserLocation && userLocation) ? "la tua posizione" : hotelLocation.name;
+
+      modalTitle.textContent = `Navigazione verso ${placeName}`;
+
+      let html = '';
+      if(distance <= 500){
+        html = `
+          <div class="navigation-options">
+            <h3>🚶 Percorso a piedi (${distance}m - circa ${Math.round(distance/80)} minuti)</h3>
+            <p style="color:#666;margin-bottom:15px;">Partenza da: <strong>${startName}</strong></p>
+
+            <div class="nav-option" onclick="openGoogleMaps(${lat}, ${lng}, 'walking', ${startLat}, ${startLng})">
+              <h4>Google Maps - A piedi</h4>
+              <p>Ottieni indicazioni dettagliate per camminare</p>
+            </div>
+
+            <div class="nav-option" onclick="openAppleMaps(${lat}, ${lng}, 'walking', ${startLat}, ${startLng})">
+              <h4>Apple Maps - A piedi</h4>
+              <p>Per dispositivi iOS</p>
+            </div>
+
+            <hr style="margin:20px 0;border:1px solid #eee;">
+            <p style="color:#666;font-size:14px;">
+              <strong>Suggerimento:</strong> Il percorso è breve e Vienna è molto pedonale.
+              Goditi l'atmosfera a piedi!
+            </p>
+          </div>
+        `;
+      } else {
+        const walkingTime = Math.round(distance/80);
+        const transitTime  = Math.round(distance/250);
+        html = `
+          <div class="navigation-options">
+            <h3>🚇 Percorso consigliato con mezzi pubblici</h3>
+            <p style="color:#666;margin-bottom:15px;">Partenza da: <strong>${startName}</strong></p>
+
+            <div class="nav-option" onclick="openGoogleMaps(${lat}, ${lng}, 'transit', ${startLat}, ${startLng})">
+              <h4>Google Maps - Mezzi pubblici</h4>
+              <p>Metro U-Bahn, Tram o Bus (circa ${transitTime} minuti)</p>
+            </div>
+
+            <div class="nav-option" onclick="openWienerLinien(${lat}, ${lng}, ${startLat}, ${startLng})">
+              <h4>Wiener Linien - App ufficiale trasporti Vienna</h4>
+              <p>Biglietti e orari in tempo reale</p>
+            </div>
+
+            <div class="nav-option" onclick="openUber(${lat}, ${lng}, ${startLat}, ${startLng})">
+              <h4>Uber / Taxi</h4>
+              <p>Opzione più veloce ma più costosa</p>
+            </div>
+
+            <hr style="margin:20px 0;border:1px solid #eee;">
+            <h3>🚶 Alternativa a piedi (${distance}m - circa ${walkingTime} minuti)</h3>
+            <div class="nav-option" onclick="openGoogleMaps(${lat}, ${lng}, 'walking', ${startLat}, ${startLng})">
+              <h4>Google Maps - A piedi</h4>
+              <p>Se preferisci camminare</p>
+            </div>
+
+            <hr style="margin:20px 0;border:1px solid #eee;">
+            <p style="color:#666;font-size:14px;">
+              <strong>Biglietti trasporti:</strong><br>
+              • Biglietto singolo: €2.40<br>
+              • Giornaliero: €8.00<br>
+              • Vienna Card 48h: €25 (trasporti + sconti musei)
+            </p>
+          </div>
+        `;
+      }
+
+      modalBody.innerHTML = html;
+      modal.style.display = 'block';
+    };
+
+    // ====== Apertura app navigazione (UNICA versione) ======
+    window.openGoogleMaps = function(lat, lng, mode, startLat, startLng){
+      const sLat = startLat ?? hotelLocation.lat;
+      const sLng = startLng ?? hotelLocation.lng;
+      const travelMode = (mode === 'walking') ? '2' : '3'; // 2=walking, 3=transit/driving mix
+      const url = `https://www.google.com/maps/dir/${sLat},${sLng}/${lat},${lng}/@${lat},${lng},15z/data=!4m2!4m1!3e${travelMode}`;
+      window.open(url, '_blank');
+    };
+
+    window.openAppleMaps = function(lat, lng, mode, startLat, startLng){
+      const sLat = startLat ?? hotelLocation.lat;
+      const sLng = startLng ?? hotelLocation.lng;
+      // schema https funziona su desktop e iOS
+      const dirflg = (mode === 'walking') ? 'w' : 'r';
+      const url = `https://maps.apple.com/?saddr=${sLat},${sLng}&daddr=${lat},${lng}&dirflg=${dirflg}`;
+      window.open(url, '_blank');
+    };
+
+    window.openWienerLinien = function(lat, lng, startLat, startLng){
+      const sLat = startLat ?? hotelLocation.lat;
+      const sLng = startLng ?? hotelLocation.lng;
+      const url = `https://www.wienerlinien.at/web/wl-en/journey-planner?from=${sLat},${sLng}&to=${lat},${lng}`;
+      window.open(url, '_blank');
+    };
+
+    window.openUber = function(lat, lng, startLat, startLng){
+      const sLat = startLat ?? hotelLocation.lat;
+      const sLng = startLng ?? hotelLocation.lng;
+      const url = `https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${sLat}&pickup[longitude]=${sLng}&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}`;
+      window.open(url, '_blank');
+    };
+
+    // ====== Eventi ======
+    document.addEventListener('DOMContentLoaded', ()=>{
+      initMap();
+      updateDistances();
+      renderPlaces('monuments');
+      showPlacesOnMap('monuments');
+
+      document.getElementById('locationBtn').addEventListener('click', centerOnUser);
+
+      document.querySelectorAll('.category-btn').forEach(btn=>{
+        btn.addEventListener('click', function(){
+          document.querySelectorAll('.category-btn').forEach(b=>b.classList.remove('active'));
+          this.classList.add('active');
+          currentCategory = this.dataset.category;
+          renderPlaces(currentCategory, document.getElementById('searchBar').value);
+          showPlacesOnMap(currentCategory);
         });
-    </script>
+      });
+
+      document.querySelectorAll('.sort-btn').forEach(btn=>{
+        btn.addEventListener('click', function(){
+          document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+          this.classList.add('active');
+          currentSort = this.dataset.sort;
+          if(currentSort==='distance' && !userLocation){ centerOnUser(); }
+          renderPlaces(currentCategory, document.getElementById('searchBar').value);
+        });
+      });
+
+      const activeFilters = [];
+      document.getElementById('searchBar').addEventListener('input', e=>{
+        renderPlaces(currentCategory, e.target.value, activeFilters);
+      });
+
+      document.querySelectorAll('.filter-chip').forEach(chip=>{
+        chip.addEventListener('click', function(){
+          const f = this.dataset.filter;
+          if(this.classList.contains('active')){
+            this.classList.remove('active');
+            const i = activeFilters.indexOf(f);
+            if(i>-1) activeFilters.splice(i,1);
+          }else{
+            this.classList.add('active');
+            activeFilters.push(f);
+          }
+          renderPlaces(currentCategory, document.getElementById('searchBar').value, activeFilters);
+        });
+      });
+
+      document.querySelector('.close').addEventListener('click', ()=> {
+        document.getElementById('navigationModal').style.display = 'none';
+      });
+      window.addEventListener('click', (e)=>{
+        const modal = document.getElementById('navigationModal');
+        if(e.target === modal){ modal.style.display = 'none'; }
+      });
+    });
+
+    window.addEventListener('resize', ()=>{ if(map) map.invalidateSize(); });
+    window.addEventListener('beforeunload', ()=>{ if(watchId){ navigator.geolocation.clearWatch(watchId); }});
+  </script>
 </body>
 </html>
