@@ -1,4 +1,105 @@
-<!DOCTYPE html>
+// Modal navigazione - Faccio questa funzione globale
+        window.showNavigationModal = function(placeName, lat, lng, distance, fromUserLocation = false) {
+            const modal = document.getElementById('navigationModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            
+            modalTitle.textContent = `Navigazione verso ${placeName}`;
+            
+            // Usa la posizione utente se disponibile e richiesta
+            const startLat = fromUserLocation && userLocation ? userLocation.lat : hotelLocation.lat;
+            const startLng = fromUserLocation && userLocation ? userLocation.lng : hotelLocation.lng;
+            const startName = fromUserLocation && userLocation ? "la tua posizione" : hotelLocation.name;
+            
+            let navigationOptions = '';
+            
+            if (distance <= 500) {
+                navigationOptions = `
+                    <div class="navigation-options">
+                        <h3>🚶 Percorso a piedi (${distance}m - circa ${Math.round(distance/80)} minuti)</h3>
+                        <p style="color: #666; margin-bottom: 15px;">Partenza da: <strong>${startName}</strong></p>
+                        <div class="nav-option" onclick="openGoogleMaps(${lat}, ${lng}, 'walking', ${startLat}, ${startLng})">
+                            <h4>Google Maps - A piedi</h4>
+                            <p>Ottieni indicazioni dettagliate per camminare</p>
+                        </div>
+                        <div class="nav-option" onclick="openAppleMaps(${lat}, ${lng}, 'walking', ${startLat}, ${startLng})">
+                            <h4>Apple Maps - A piedi</h4>
+                            <p>Per dispositivi iOS</p>
+                        </div>
+                        <hr style="margin: 20px 0; border: 1px solid #eee;">
+                        <p style="color: #666; font-size: 14px;">
+                            <strong>Suggerimento:</strong> Il percorso è breve e Vienna è una città molto pedonale. 
+                            Ti consigliamo di camminare per goderti l'atmosfera della città!
+                        </p>
+                    </div>
+                `;
+            } else {
+                const walkingTime = Math.round(distance/80);
+                const transitTime = Math.round(distance/250);
+                
+                navigationOptions = `
+                    <div class="navigation-options">
+                        <h3>🚇 Percorso consigliato con mezzi pubblici</h3>
+                        <p style="color: #666; margin-bottom: 15px;">Partenza da: <strong>${startName}</strong></p>
+                        <div class="nav-option" onclick="openGoogleMaps(${lat}, ${lng}, 'transit', ${startLat}, ${startLng})">
+                            <h4>Google Maps - Mezzi pubblici</h4>
+                            <p>Metro U-Bahn, Tram o Bus (circa ${transitTime} minuti)</p>
+                        </div>
+                        <div class="nav-option" onclick="openWienerLinien(${lat}, ${lng}, ${startLat}, ${startLng})">
+                            <h4>Wiener Linien - App ufficiale trasporti Vienna</h4>
+                            <p>Biglietti e orari in tempo reale</p>
+                        </div>
+                        <div class="nav-option" onclick="openUber(${lat}, ${lng}, ${startLat}, ${startLng})">
+                            <h4>Uber / Taxi</h4>
+                            <p>Opzione più veloce ma più costosa</p>
+                        </div>
+                        <hr style="margin: 20px 0; border: 1px solid #eee;">
+                        <h3>🚶 Alternativa a piedi (${distance}m - circa ${walkingTime} minuti)</h3>
+                        <div class="nav-option" onclick="openGoogleMaps(${lat}, ${lng}, 'walking', ${startLat}, ${startLng})">
+                            <h4>Google Maps - A piedi</h4>
+                            <p>Se preferisci camminare</p>
+                        </div>
+                        <hr style="margin: 20px 0; border: 1px solid #eee;">
+                        <p style="color: #666; font-size: 14px;">
+                            <strong>Biglietti trasporti:</strong><br>
+                            • Biglietto singolo: €2.40<br>
+                            • Giornaliero: €8.00<br>
+                            • Vienna Card 48h: €25 (trasporti + sconti musei)
+                        </p>
+                    </div>
+                `;
+            }
+            
+            modalBody.innerHTML = navigationOptions;
+            modal.style.display = 'block';
+        }
+
+        // Funzioni per aprire app di navigazione - Le rendo globali
+        window.openGoogleMaps = function(lat, lng, mode, startLat, startLng) {
+            startLat = startLat || hotelLocation.lat;
+            startLng = startLng || hotelLocation.lng;
+            const url = `https://www.google.com/maps/dir/${startLat},${startLng}/${lat},${lng}/@${lat},${lng},15z/data=!4m2!4m1!3e${mode === 'walking' ? '2' : '3'}`;
+            window.open(url, '_blank');
+        }
+
+        window.openAppleMaps = function(lat, lng, mode, startLat, startLng) {
+            startLat = startLat || hotelLocation.lat;
+            startLng = startLng || hotelLocation.lng;
+            const url = `maps://maps.apple.com/maps?saddr=${startLat},${startLng}&daddr=${lat},${lng}&dirflg=${mode === 'walking' ? 'w' : 'r'}`;
+            window.open(url, '_blank');
+        }
+
+        window.openWienerLinien = function(lat, lng, startLat, startLng) {
+            startLat = startLat || hotelLocation.lat;
+            startLng = startLng || hotelLocation.lng;
+            const url = `https://www.wienerlinien.at/web/wl-en/journey-planner?from=${startLat},${startLng}&to=${lat},${lng}`;
+            window.open(url, '_blank');
+        }
+
+        window.openUber = function(lat, lng, startLat, startLng) {
+            startLat = startLat || hotelLocation.lat;
+            startLng = startLng || hotelLocation.lng;
+            const url = `https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${startLat}&pickup[longitude]=${startLng}&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}`;<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -318,6 +419,99 @@
             color: #666;
         }
 
+        .location-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        .location-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .location-btn.active {
+            background: #667eea;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(102, 126, 234, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
+        }
+
+        .distance-from-me {
+            background: #2196F3;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+
+        .sort-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .sort-btn {
+            padding: 8px 15px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .sort-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .sort-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .location-status {
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .location-status.active {
+            display: flex;
+        }
+
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -350,9 +544,22 @@
 
         <div class="map-container">
             <div id="map"></div>
+            <button class="location-btn" id="locationBtn" title="La mia posizione">📍</button>
+        </div>
+
+        <div class="location-status" id="locationStatus">
+            <div class="pulse-dot"></div>
+            <span>Geolocalizzazione attiva - La tua posizione è aggiornata in tempo reale</span>
         </div>
 
         <input type="text" class="search-bar" placeholder="🔍 Cerca monumenti, ristoranti, attrazioni..." id="searchBar">
+
+        <div class="sort-options">
+            <span style="font-weight: bold;">Ordina per:</span>
+            <button class="sort-btn active" data-sort="default">Default</button>
+            <button class="sort-btn" data-sort="distance">Distanza da me</button>
+            <button class="sort-btn" data-sort="name">Nome A-Z</button>
+        </div>
 
         <div class="filter-options">
             <div class="filter-chip" data-filter="free">Gratuito</div>
@@ -681,6 +888,10 @@
         let map;
         let markers = [];
         let currentCategory = 'monuments';
+        let userMarker = null;
+        let userLocation = null;
+        let watchId = null;
+        let currentSort = 'default';
 
         function initMap() {
             map = L.map('map').setView([hotelLocation.lat, hotelLocation.lng], 14);
@@ -700,6 +911,104 @@
                 .addTo(map)
                 .bindPopup(`<strong>${hotelLocation.name}</strong><br>${hotelLocation.address}`)
                 .openPopup();
+
+            // Inizializza geolocalizzazione
+            initGeolocation();
+        }
+
+        // Inizializza geolocalizzazione
+        function initGeolocation() {
+            if ("geolocation" in navigator) {
+                // Richiedi permesso e ottieni posizione
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        updateUserLocation(position.coords.latitude, position.coords.longitude);
+                        startLocationTracking();
+                    },
+                    (error) => {
+                        console.log("Geolocalizzazione non disponibile o permesso negato:", error);
+                    },
+                    { enableHighAccuracy: true }
+                );
+            }
+        }
+
+        // Tracciamento continuo della posizione
+        function startLocationTracking() {
+            if ("geolocation" in navigator) {
+                watchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        updateUserLocation(position.coords.latitude, position.coords.longitude);
+                    },
+                    (error) => {
+                        console.error("Errore tracking posizione:", error);
+                    },
+                    { 
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    }
+                );
+                
+                document.getElementById('locationStatus').classList.add('active');
+                document.getElementById('locationBtn').classList.add('active');
+            }
+        }
+
+        // Aggiorna posizione utente
+        function updateUserLocation(lat, lng) {
+            userLocation = { lat, lng };
+            
+            // Rimuovi marker precedente
+            if (userMarker) {
+                map.removeLayer(userMarker);
+            }
+            
+            // Crea icona per posizione utente
+            const userIcon = L.divIcon({
+                html: `<div style="position: relative;">
+                    <div style="background: #2196F3; border: 3px solid white; border-radius: 50%; width: 20px; height: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>
+                    <div style="position: absolute; top: -5px; left: -5px; width: 30px; height: 30px; border: 2px solid #2196F3; border-radius: 50%; opacity: 0.3; animation: pulse 2s infinite;"></div>
+                </div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+            
+            userMarker = L.marker([lat, lng], {icon: userIcon})
+                .addTo(map)
+                .bindPopup("<strong>La tua posizione</strong>");
+            
+            // Aggiorna distanze
+            updateDistancesFromUser();
+            
+            // Se è ordinato per distanza, riordina
+            if (currentSort === 'distance') {
+                renderPlaces(currentCategory, document.getElementById('searchBar').value);
+            }
+        }
+
+        // Centra mappa sulla posizione utente
+        function centerOnUser() {
+            if (userLocation) {
+                map.setView([userLocation.lat, userLocation.lng], 16);
+                if (userMarker) {
+                    userMarker.openPopup();
+                }
+            } else {
+                // Riprova a ottenere la posizione
+                if ("geolocation" in navigator) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            updateUserLocation(position.coords.latitude, position.coords.longitude);
+                            map.setView([position.coords.latitude, position.coords.longitude], 16);
+                            startLocationTracking();
+                        },
+                        (error) => {
+                            alert("Per favore abilita la geolocalizzazione nel tuo browser");
+                        }
+                    );
+                }
+            }
         }
 
         // Calcola distanza tra due punti
@@ -718,12 +1027,26 @@
             return R * c;
         }
 
-        // Aggiorna distanze
+        // Aggiorna distanze dall'hotel
         function updateDistances() {
             Object.keys(places).forEach(category => {
                 places[category].forEach(place => {
                     place.distance = Math.round(calculateDistance(
                         hotelLocation.lat, hotelLocation.lng,
+                        place.lat, place.lng
+                    ));
+                });
+            });
+        }
+
+        // Aggiorna distanze dalla posizione utente
+        function updateDistancesFromUser() {
+            if (!userLocation) return;
+            
+            Object.keys(places).forEach(category => {
+                places[category].forEach(place => {
+                    place.distanceFromUser = Math.round(calculateDistance(
+                        userLocation.lat, userLocation.lng,
                         place.lat, place.lng
                     ));
                 });
@@ -800,10 +1123,24 @@
                 });
             }
             
+            // Applica ordinamento
+            if (currentSort === 'distance' && userLocation) {
+                filteredPlaces.sort((a, b) => (a.distanceFromUser || 999999) - (b.distanceFromUser || 999999));
+            } else if (currentSort === 'name') {
+                filteredPlaces.sort((a, b) => a.name.localeCompare(b.name));
+            }
+            
             grid.innerHTML = filteredPlaces.map(place => {
-                const transportType = place.distance <= 500 ? '🚶 A piedi' : '🚇 Mezzi pubblici';
-                const transportColor = place.distance <= 500 ? '#4CAF50' : '#2196F3';
+                const useUserLocation = userLocation && currentSort === 'distance';
+                const currentDistance = useUserLocation ? (place.distanceFromUser || place.distance) : place.distance;
+                const transportType = currentDistance <= 500 ? '🚶 A piedi' : '🚇 Mezzi pubblici';
+                const transportColor = currentDistance <= 500 ? '#4CAF50' : '#2196F3';
                 const priceClass = place.price.toLowerCase().includes('gratuito') ? 'free-badge' : '';
+                
+                let distanceInfo = `${place.distance}m dall'hotel`;
+                if (userLocation && place.distanceFromUser !== undefined) {
+                    distanceInfo += `<span class="distance-from-me">📍 ${place.distanceFromUser}m da te</span>`;
+                }
                 
                 return `
                     <div class="place-card">
@@ -814,8 +1151,10 @@
                             <div class="place-details">
                                 <div class="detail-item">
                                     <span class="detail-icon">📍</span>
-                                    <span>${place.distance}m dall'hotel</span>
-                                    <span class="distance-badge" style="background: ${transportColor}; margin-left: 10px;">
+                                    <span>${distanceInfo}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="distance-badge" style="background: ${transportColor};">
                                         ${transportType}
                                     </span>
                                 </div>
@@ -828,7 +1167,7 @@
                                     <span>${place.hours}</span>
                                 </div>
                             </div>
-                            <button class="navigate-btn" onclick="showNavigationModal('${place.name.replace(/'/g, "\\'")}', ${place.lat}, ${place.lng}, ${place.distance})">
+                            <button class="navigate-btn" onclick="showNavigationModal('${place.name.replace(/'/g, "\\'")}', ${place.lat}, ${place.lng}, ${currentDistance}, ${useUserLocation})">
                                 📍 Indicazioni Stradali
                             </button>
                         </div>
@@ -926,8 +1265,10 @@
             window.open(url, '_blank');
         }
 
-        window.openUber = function(lat, lng) {
-            const url = `https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${hotelLocation.lat}&pickup[longitude]=${hotelLocation.lng}&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}`;
+        window.openUber = function(lat, lng, startLat, startLng) {
+            startLat = startLat || hotelLocation.lat;
+            startLng = startLng || hotelLocation.lng;
+            const url = `https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${startLat}&pickup[longitude]=${startLng}&dropoff[latitude]=${lat}&dropoff[longitude]=${lng}`;
             window.open(url, '_blank');
         }
 
@@ -938,6 +1279,9 @@
             renderPlaces('monuments');
             showPlacesOnMap('monuments');
             
+            // Pulsante posizione
+            document.getElementById('locationBtn').addEventListener('click', centerOnUser);
+            
             // Gestione categorie
             document.querySelectorAll('.category-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -946,6 +1290,22 @@
                     currentCategory = this.dataset.category;
                     renderPlaces(currentCategory);
                     showPlacesOnMap(currentCategory);
+                });
+            });
+            
+            // Gestione ordinamento
+            document.querySelectorAll('.sort-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentSort = this.dataset.sort;
+                    
+                    // Se ordina per distanza e non c'è geolocalizzazione, attivala
+                    if (currentSort === 'distance' && !userLocation) {
+                        centerOnUser();
+                    }
+                    
+                    renderPlaces(currentCategory, document.getElementById('searchBar').value);
                 });
             });
             
@@ -987,6 +1347,13 @@
         // Aggiorna la mappa al resize
         window.addEventListener('resize', function() {
             if (map) map.invalidateSize();
+        });
+        
+        // Pulisci il tracking quando la pagina si chiude
+        window.addEventListener('beforeunload', function() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+            }
         });
     </script>
 </body>
