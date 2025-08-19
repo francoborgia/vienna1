@@ -47,23 +47,55 @@
   </section>
 
   <script>
-    function makeIcon(color){
-      const svg = encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'><circle cx='12' cy='12' r='10' fill='${color}'/></svg>`);
-      return L.icon({iconUrl:`data:image/svg+xml,${svg}`,iconSize:[24,24],iconAnchor:[12,12]});
+  (function(){
+    // Helper: show error in sidebar if something fails
+    function showError(msg){
+      try{
+        const list=document.getElementById('poiList');
+        if(list){
+          const div=document.createElement('div');
+          div.style.cssText='margin:.5rem 0;padding:.5rem;border:1px solid #fecaca;background:#fff1f2;color:#7f1d1d;border-radius:.5rem;font-size:.9rem';
+          div.textContent=msg;
+          list.prepend(div);
+        }
+      }catch(_){/* noop */}
+      console.error(msg);
     }
-    const iconMonument = makeIcon('#3b82f6');
-    const iconFastFood = makeIcon('#f59e0b');
-    const iconHotel = makeIcon('#10b981');
 
-    const map = L.map('map').setView([48.2082,16.3738],13);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+    // Check Leaflet loaded
+    if(typeof L==='undefined'){
+      showError('Errore: la libreria mappe non è stata caricata (Leaflet). Assicurati di essere online e che l\'hosting non blocchi unpkg.com');
+      return;
+    }
 
-    const hotelMarker=L.marker([48.2127,16.3717],{icon:iconHotel}).addTo(map).bindPopup('Boutique Hotel Das Tigra');
+    function makeIcon(color){
+      var svg = encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'><circle cx='12' cy='12' r='10' fill='"+color+"'/></svg>");
+      return L.icon({iconUrl:'data:image/svg+xml,'+svg,iconSize:[24,24],iconAnchor:[12,12]});
+    }
+    var iconMonument = makeIcon('#3b82f6');
+    var iconFastFood = makeIcon('#f59e0b');
+    var iconHotel = makeIcon('#10b981');
 
-    const layerMonuments=L.layerGroup().addTo(map);
-    const layerFastFood=L.layerGroup().addTo(map);
+    var map;
+    try{
+      map = L.map('map').setView([48.2082,16.3738],13);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+      // forza layout su alcuni host
+      setTimeout(function(){ try{ map.invalidateSize(); }catch(_){ } }, 300);
+      window.addEventListener('resize', function(){ try{ map.invalidateSize(); }catch(_){ } });
+    }catch(e){
+      showError('Impossibile inizializzare la mappa: '+e.message);
+      return;
+    }
 
-    const POIS=[
+    // Hotel
+    L.marker([48.2127,16.3717],{icon:iconHotel}).addTo(map).bindPopup('Boutique Hotel Das Tigra');
+
+    // Layer groups
+    var layerMonuments=L.layerGroup().addTo(map);
+    var layerFastFood=L.layerGroup().addTo(map);
+
+    var POIS=[
       {name:'Stephansdom',lat:48.2084,lng:16.3731,desc:'Cattedrale gotica',paid:false},
       {name:'Hofburg',lat:48.2065,lng:16.3656,desc:'Palazzo imperiale',paid:true},
       {name:'Schönbrunn',lat:48.1845,lng:16.3122,desc:'Residenza estiva',paid:true},
@@ -73,34 +105,57 @@
 
     function addMonuments(){
       layerMonuments.clearLayers();
-      POIS.forEach(p=>{
-        L.marker([p.lat,p.lng],{icon:iconMonument}).addTo(layerMonuments).bindPopup(`<b>${p.name}</b><br>${p.desc}`);
-      });
+      for(var i=0;i<POIS.length;i++){
+        var p=POIS[i];
+        L.marker([p.lat,p.lng],{icon:iconMonument}).addTo(layerMonuments).bindPopup('<b>'+p.name+'</b><br>'+p.desc+(p.paid?' <span style="color:#b91c1c">(a pagamento)</span>':' <span style="color:#15803d">(gratis)</span>'));
+      }
     }
     addMonuments();
 
-    // Fast food via Overpass
+    // Fast food via Overpass (OSM)
     async function fetchFastFood(){
-      const b=map.getBounds();
-      const query=`[out:json][timeout:25];(node["amenity"="fast_food"](${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()}));out;`;
+      var b=map.getBounds();
+      var query='[out:json][timeout:25];(node["amenity"="fast_food"]('+b.getSouth()+','+b.getWest()+','+b.getNorth()+','+b.getEast()+'));out;';
       try{
-        const res=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:query});
-        const json=await res.json();
-        layerFastFood.clearLayers();
-        json.elements.forEach(el=>{
-          if(!el.lat||!el.lon)return;
-          const name=el.tags?.name||'Fast food';
-          L.marker([el.lat,el.lon],{icon:iconFastFood}).addTo(layerFastFood).bindPopup(`<b>${name}</b>`);
+        var res=await fetch('https://overpass-api.de/api/interpreter',{
+          method:'POST',
+          headers:{'Content-Type':'text/plain; charset=UTF-8'},
+          body:query
         });
-      }catch(e){alert('Errore caricando fast food');}
+        if(!res.ok){ throw new Error('HTTP '+res.status); }
+        var json=await res.json();
+        layerFastFood.clearLayers();
+        var els=json.elements||[];
+        for(var j=0;j<els.length;j++){
+          var el=els[j];
+          if(!el || typeof el.lat!=='number' || typeof el.lon!=='number') continue;
+          var tags=el.tags||{};
+          var name=tags.name||tags.brand||'Fast food';
+          L.marker([el.lat,el.lon],{icon:iconFastFood}).addTo(layerFastFood).bindPopup('<b>'+name+'</b>');
+        }
+        if(els.length===0){ showError('Nessun fast food trovato nell\'area attuale: zooma o sposta la mappa e riprova.'); }
+      }catch(e){ showError('Errore caricando fast food: '+e.message); }
     }
 
-    document.getElementById('fetchFastFoodBtn').onclick=fetchFastFood;
-    document.getElementById('toggleMonuments').onchange=e=>{if(e.target.checked){map.addLayer(layerMonuments);}else{map.removeLayer(layerMonuments);}};
-    document.getElementById('toggleFastFood').onchange=e=>{if(e.target.checked){map.addLayer(layerFastFood);}else{map.removeLayer(layerFastFood);}};
+    var btnFF=document.getElementById('fetchFastFoodBtn');
+    if(btnFF) btnFF.onclick=fetchFastFood;
 
-    const list=document.getElementById('poiList');
-    list.innerHTML=POIS.map(p=>`<div style='margin-bottom:0.5rem'><b>${p.name}</b><br>${p.desc} ${p.paid?"<span style='color:#b91c1c'>(a pagamento)</span>":"<span style='color:#15803d'>(gratis)</span>"}</div>`).join('');
-  </script>
+    var chkMon=document.getElementById('toggleMonuments');
+    var chkFF=document.getElementById('toggleFastFood');
+    if(chkMon) chkMon.onchange=function(e){ if(e.target.checked){ map.addLayer(layerMonuments);} else { map.removeLayer(layerMonuments);} };
+    if(chkFF) chkFF.onchange=function(e){ if(e.target.checked){ map.addLayer(layerFastFood);} else { map.removeLayer(layerFastFood);} };
+
+    // Lista laterale
+    var list=document.getElementById('poiList');
+    if(list){
+      var html='';
+      for(var k=0;k<POIS.length;k++){
+        var p=POIS[k];
+        html+="<div style='margin-bottom:.5rem'><b>"+p.name+"</b><br>"+p.desc+" "+(p.paid?"<span style='color:#b91c1c'>(a pagamento)</span>":"<span style='color:#15803d'>(gratis)</span>")+"</div>";
+      }
+      list.innerHTML=html;
+    }
+  })();
+</script>
 </body>
 </html>
