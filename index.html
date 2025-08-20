@@ -3,42 +3,319 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Vienna Trip Navigator</title>
-
-  <!-- Leaflet CSS -->
+  <title>Vienna Tourist Guide</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
   <style>
-    html, body { margin:0; padding:0; height:100%; }
-    #map { height: 100vh; width: 100%; }
-    #controls {
-      position: fixed;
-      top: 12px;
-      left: 12px;
-      background: #fff;
-      padding: 10px;
-      border-radius: 12px;
-      box-shadow: 0 6px 16px rgba(0,0,0,.15);
-      z-index: 1000;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    }
-    button { margin:2px 4px; padding:6px 10px; border-radius:8px; border:1px solid #ddd; background:#fff; }
-    button:hover { background:#f6f6f6; }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
+    .container{max-width:1400px;margin:0 auto;background:rgba(255,255,255,.95);border-radius:20px;padding:30px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+    h1{text-align:center;color:#764ba2;margin-bottom:30px;font-size:2.3em;text-shadow:2px 2px 4px rgba(0,0,0,.1)}
+    .map-container{height:500px;border-radius:15px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.2);margin-bottom:30px;position:relative}
+    #map{height:100%;width:100%}
+    .row{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+    @media(max-width:1000px){.row{grid-template-columns:1fr}}
+    .section{background:#fff;border-radius:14px;padding:16px;box-shadow:0 8px 18px rgba(0,0,0,.08)}
+    .section h3{margin-bottom:10px;color:#444}
+    .categories{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:20px}
+    .category-btn{padding:12px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:15px;font-weight:600;transition:.25s;box-shadow:0 5px 15px rgba(0,0,0,.15)}
+    .category-btn:hover{transform:translateY(-2px)}
+    .category-btn.active{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%)}
+    .places-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;margin-top:10px}
+    .place-card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,.1);transition:.25s}
+    .place-card:hover{transform:translateY(-4px)}
+    .place-image{width:100%;height:190px;object-fit:cover}
+    .place-info{padding:16px}
+    .place-name{font-size:1.15em;font-weight:700;color:#333;margin-bottom:8px}
+    .place-description{color:#666;line-height:1.55;margin-bottom:12px;font-size:.95em}
+    .detail{display:flex;align-items:center;gap:8px;color:#555;font-size:.9em;margin:6px 0}
+    .distance-badge{display:inline-block;padding:4px 9px;background:#4CAF50;color:#fff;border-radius:12px;font-size:.8em;font-weight:700}
+    .price-badge{display:inline-block;padding:4px 9px;background:#ff9800;color:#fff;border-radius:12px;font-size:.8em;font-weight:700}
+    .free-badge{background:#4CAF50}
+    .navigate-btn{width:100%;padding:10px;margin-top:12px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;transition:.25s}
+    .navigate-btn:hover{filter:brightness(1.05)}
+    .hotel-info{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:#fff;padding:16px;border-radius:14px;margin-bottom:20px;box-shadow:0 10px 25px rgba(0,0,0,.18)}
+    .search-bar{width:100%;padding:13px;border:2px solid #ddd;border-radius:10px;font-size:15px;margin-bottom:14px}
+    .filter-options{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+    .chip{padding:7px 12px;background:#f0f0f0;border-radius:20px;cursor:pointer;border:2px solid transparent}
+    .chip.active{background:#667eea;color:#fff;border-color:#764ba2}
+    .sort-options{display:flex;gap:10px;margin-bottom:14px;align-items:center}
+    .sort-btn{padding:7px 12px;background:#fff;border:2px solid #667eea;border-radius:20px;cursor:pointer;font-size:14px}
+    .sort-btn.active{background:#667eea;color:#fff}
+    .location-btn{position:absolute;top:10px;right:10px;z-index:1000;background:#fff;border:2px solid #667eea;border-radius:50%;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .location-status{padding:10px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border-radius:10px;margin:12px 0;display:none;align-items:center;gap:10px}
+    .location-status.active{display:flex}
+    .modal{display:none;position:fixed;z-index:1000;inset:0;background:rgba(0,0,0,.7)}
+    .modal-content{background:#fff;margin:5% auto;padding:24px;border-radius:18px;width:90%;max-width:600px;position:relative}
+    .close{position:absolute;right:16px;top:10px;font-size:28px;cursor:pointer;color:#999}
+    .tip{font-size:.9em;color:#666}
+    .airtag-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:720px){.airtag-grid{grid-template-columns:1fr}}
+    .btn{padding:10px 12px;border:none;border-radius:10px;cursor:pointer;font-weight:700}
+    .btn-primary{background:#0b73ff;color:#fff}
+    .btn-outline{background:#fff;border:2px solid #0b73ff;color:#0b73ff}
+    .nav-option{padding:10px;margin:8px 0;background:#f8f9fa;border-radius:8px;cursor:pointer;transition:.2s}
+    .nav-option:hover{background:#e9ecef}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(102,126,234,.7)}70%{box-shadow:0 0 0 10px rgba(102,126,234,0)}100%{box-shadow:0 0 0 0 rgba(102,126,234,0)}}
   </style>
 </head>
 <body>
-  <div id="controls">
-    <button onclick="goToHotel()">🏨 Torna all’hotel</button>
-    <button onclick="pauseSpeech()">⏸ Pausa</button>
-    <button onclick="resumeSpeech()">▶️ Riprendi</button>
-    <button onclick="stopSpeech()">⏹ Stop</button>
+  <div class="container">
+    <h1>🏛️ Vienna Tourist Guide 🇦🇹</h1>
+
+    <div class="hotel-info">
+      <h2>📍 Il Tuo Hotel</h2>
+      <p><strong>Boutique Hotel Das Tigra</strong></p>
+      <p>Tiefer Graben 14-20, 1010 Wien</p>
+      <p>⭐⭐⭐⭐ Hotel boutique nel centro storico di Vienna</p>
+    </div>
+
+    <div class="map-container">
+      <div id="map"></div>
+      <button class="location-btn" id="locationBtn" title="La mia posizione">📍</button>
+    </div>
+
+    <div class="row">
+      <!-- Colonna sinistra -->
+      <div class="section">
+        <div class="location-status" id="locationStatus">
+          <span>📡 Geolocalizzazione attiva — posizione aggiornata in tempo reale</span>
+        </div>
+
+        <input type="text" class="search-bar" placeholder="🔍 Cerca monumenti, ristoranti, attrazioni..." id="searchBar">
+
+        <div class="sort-options">
+          <span style="font-weight:bold;">Ordina per:</span>
+          <button class="sort-btn active" data-sort="default">Default</button>
+          <button class="sort-btn" data-sort="distance">Distanza da me</button>
+          <button class="sort-btn" data-sort="name">Nome A-Z</button>
+        </div>
+
+        <div class="filter-options">
+          <div class="chip" data-filter="free">Gratuito</div>
+          <div class="chip" data-filter="paid">A pagamento</div>
+          <div class="chip" data-filter="walking">&lt; 500m a piedi</div>
+          <div class="chip" data-filter="transport">&gt; 500m trasporti</div>
+        </div>
+
+        <div class="categories" id="categoriesBar">
+          <button class="category-btn active" data-category="monuments">🏛️ Monumenti</button>
+          <button class="category-btn" data-category="museums">🎨 Musei</button>
+          <button class="category-btn" data-category="restaurants">🍽️ Ristoranti</button>
+          <button class="category-btn" data-category="fastfood">🍔 Fast Food</button>
+          <button class="category-btn" data-category="parks">🌳 Parchi</button>
+          <button class="category-btn" data-category="shopping">🛍️ Shopping</button>
+          <button class="category-btn" data-category="attractions" id="btnAttractions">✨ Attrazioni (OSM)</button>
+          <button class="category-btn" id="btnLoadAttractions">⤵️ Carica altre attrazioni</button>
+        </div>
+
+        <div class="places-grid" id="placesGrid"></div>
+      </div>
+
+      <!-- Colonna destra: AirTag + Guida Live -->
+      <div class="section">
+        <h3>🎯 Pannello AirTag / Oggetto</h3>
+        <p class="tip">
+          Gli AirTag non espongono API web: questo pannello permette di <b>aprire Dov'è</b> su iOS
+          e di <b>navigare</b> verso coordinate note dell'oggetto (se le conosci).
+        </p>
+
+        <div style="display:flex;gap:10px;margin:10px 0;">
+          <button class="btn btn-primary" id="btnOpenFindMy">Apri Dov'è (iOS)</button>
+          <button class="btn btn-outline" id="btnFindMyHelp">Cos'è questo?</button>
+        </div>
+
+        <hr style="margin:12px 0;">
+
+        <h4>📌 Coordinate note dell'oggetto (facoltative)</h4>
+        <div class="airtag-grid" style="margin-top:8px;">
+          <input id="tagName" class="search-bar" placeholder="Nome oggetto (es. Zaino, Valigia)">
+          <input id="tagLat"  class="search-bar" placeholder="Latitudine (es. 48.20849)">
+          <input id="tagLng"  class="search-bar" placeholder="Longitudine (es. 16.37312)">
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary" id="btnSaveTag">Salva</button>
+            <button class="btn" id="btnUseMyPos">Usa mia posizione</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:10px;">
+          <button class="btn" id="btnOpenAppleMaps">Apri in Apple Maps</button>
+          <button class="btn" id="btnOpenGoogleMaps">Apri in Google Maps</button>
+        </div>
+
+        <p id="tagSavedInfo" class="tip" style="margin-top:8px;"></p>
+      </div>
+
+      <div class="section" id="liveGuidePanel">
+        <h3>🗺️ Guida Live</h3>
+        <p class="tip">Spunta la casella per avviare la guida interattiva dei monumenti.</p>
+        <div style="display:flex;gap:8px;align-items:center;margin:8px 0;">
+          <label><input type="checkbox" id="guideEnable"> Attiva guida live</label>
+          <label><input type="checkbox" id="guideVoice" checked> Audio (voce)</label>
+        </div>
+
+        <div id="guideNow" style="display:none;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <img id="guideImg" src="" alt="" style="width:96px;height:72px;object-fit:cover;border-radius:8px;">
+            <div>
+              <div style="font-weight:700;" id="guideTitle"></div>
+              <div id="guideBlurb" style="color:#555;margin-top:4px;"></div>
+              <div id="guideDistance" class="tip" style="margin-top:6px;"></div>
+            </div>
+          </div>
+
+          <div id="guideSections" style="margin-top:10px;"></div>
+
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="btn btn-primary" id="guideRepeat">🔊 Riascolta</button>
+            <button class="btn" id="guideNavigate">📍 Vai qui</button>
+          </div>
+
+          <div style="margin-top:12px;">
+            <div style="height:8px;background:#eee;border-radius:6px;position:relative;">
+              <div id="arrowFov" style="position:absolute;top:-6px;left:50%;transform:translateX(-50%) rotate(0deg);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid #667eea;"></div>
+            </div>
+            <div class="tip">Freccia = direzione del POI rispetto a dove punti</div>
+          </div>
+        </div>
+
+        <div id="guideNone" class="tip">Nessun POI davanti a te al momento.</div>
+      </div>
+    </div>
   </div>
 
-  <div id="map"></div>
+  <!-- Modal navigazione -->
+  <div id="navigationModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="modalTitle">Navigazione</h2>
+      <div id="modalBody"></div>
+    </div>
+  </div>
 
-  <!-- Leaflet JS (prima) -->
-  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- La tua app (dopo) -->
-  <script defer src="app.js"></script>
-</body>
-</html>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    /* =======================
+       Config geolocalizzazione / follow
+    ======================= */
+    let autoFollow = true;   // la mappa segue sempre la tua posizione
+    let userCircle = null;   // cerchio di accuratezza GPS
+
+    /* =======================
+       Dati hotel
+    ======================= */
+    const hotelLocation = {
+      lat: 48.216837,
+      lng: 16.345621,
+      name: "Boutique Hotel Das Tigra",
+      address: "Tiefer Graben 14-20, 1010 Wien"
+    };
+
+    /* =======================
+       POI base + categoria dinamica
+    ======================= */
+    const places = {
+      monuments: [
+        { name:"Palazzo di Schönbrunn", description:"Residenza imperiale barocca con 1.441 stanze, patrimonio UNESCO. Giardini magnifici e zoo.", image:"https://images.unsplash.com/photo-1516550893923-42d28e5677af?w=400", lat:48.184517, lng:16.312148, price:"€16", hours:"8:30-17:30", distance:0 },
+        { name:"Cattedrale di Santo Stefano", description:"Simbolo di Vienna, cattedrale gotica del XII secolo con torre alta 136 metri.", image:"https://images.unsplash.com/photo-1609856878074-cf31e21ccb6b?w=400", lat:48.208492, lng:16.373119, price:"Gratuito (Torre €6)", hours:"6:00-22:00", distance:0 },
+        { name:"Hofburg", description:"Complesso imperiale con musei, biblioteca nazionale e scuola di equitazione spagnola.", image:"https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=400", lat:48.206507, lng:16.365262, price:"€15", hours:"9:00-17:30", distance:0 },
+        { name:"Belvedere", description:"Complesso barocco con due palazzi e giardini. Ospita 'Il Bacio' di Klimt.", image:"https://images.unsplash.com/photo-1583225173839-59b4e437f4d4?w=400", lat:48.191567, lng:16.380995, price:"€16", hours:"10:00-18:00", distance:0 },
+        { name:"Prater e Ruota Panoramica", description:"Parco divertimenti storico con l'iconica ruota panoramica del 1897.", image:"https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=400", lat:48.216571, lng:16.395776, price:"€13.50", hours:"10:00-22:00", distance:0 },
+        { name:"Opera di Stato di Vienna", description:"Uno dei teatri d'opera più importanti al mondo, inaugurato nel 1869.", image:"https://images.unsplash.com/photo-1544320824-8db57da2fa97?w=400", lat:48.203001, lng:16.369002, price:"Tour €13", hours:"Tour: 10:00-15:00", distance:0 },
+        { name:"Palazzo del Parlamento", description:"Edificio neoclassico sede del Parlamento austriaco con statue greche.", image:"https://images.unsplash.com/photo-1548802673-5abd0ff47c09?w=400", lat:48.207788, lng:16.357613, price:"Tour gratuito", hours:"Lun-Sab con prenotazione", distance:0 },
+        { name:"Rathaus (Municipio)", description:"Imponente municipio neogotico con torre di 98 metri e piazza per eventi.", image:"https://images.unsplash.com/photo-1580836507615-96f7f950e3b?w=400", lat:48.210577, lng:16.357420, price:"Gratuito", hours:"Tour Lun, Mer, Ven 13:00", distance:0 }
+      ],
+      museums: [
+        { name:"Kunsthistorisches Museum", description:"Uno dei musei d'arte più importanti al mondo con opere di Raffaello, Vermeer, Velázquez.", image:"https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=400", lat:48.203551, lng:16.361587, price:"€21", hours:"10:00-18:00 (Gio fino 21:00)", distance:0 },
+        { name:"Albertina", description:"Collezione grafica più grande al mondo con opere di Monet, Picasso, Klimt.", image:"https://images.unsplash.com/photo-1583037189850-1921ae7c6c22?w=400", lat:48.204731, lng:16.368438, price:"€18.90", hours:"10:00-18:00 (Mer, Ven fino 21:00)", distance:0 },
+        { name:"Museo di Storia Naturale", description:"30 milioni di oggetti esposti inclusi dinosauri e la Venere di Willendorf.", image:"https://images.unsplash.com/photo-1613414969929-491c9c779910?w=400", lat:48.205268, lng:16.359989, price:"€16", hours:"9:00-18:00 (Mer fino 20:00)", distance:0 },
+        { name:"MAK - Museo Arti Applicate", description:"Design, architettura e arte contemporanea. Collezione unica di Wiener Werkstätte.", image:"https://images.unsplash.com/photo-1541367777708-c1ccbfb0e6d5?w=400", lat:48.207395, lng:16.381705, price:"€15", hours:"10:00-18:00 (Mar fino 21:00)", distance:0 }
+      ],
+      restaurants: [
+        { name:"Figlmüller", description:"Famoso per la schnitzel più grande di Vienna, tradizione dal 1905.", image:"https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400", lat:48.208765, lng:16.374526, price:"€€€", hours:"11:00-22:30", distance:0 },
+        { name:"Café Central", description:"Storico caffè viennese frequentato da Freud e Trotsky. Torte imperiali.", image:"https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400", lat:48.210372, lng:16.365063, price:"€€", hours:"7:30-22:00", distance:0 },
+        { name:"Plachutta Wollzeile", description:"Specialità: Tafelspitz (bollito di manzo), cucina tradizionale austriaca.", image:"https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400", lat:48.208492, lng:16.376798, price:"€€€", hours:"11:30-23:00", distance:0 },
+        { name:"Zum Schwarzen Kameel", description:"Dal 1618, ristorante Art Nouveau con specialità austriache e wine bar.", image:"https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=400", lat:48.210833, lng:16.367778, price:"€€€€", hours:"8:00-24:00", distance:0 },
+        { name:"Café Sacher", description:"Casa della torta Sachertorte originale, elegante caffè dal 1876.", image:"https://images.unsplash.com/photo-1550916478-59a58fe5e873?w=400", lat:48.203889, lng:16.369444, price:"€€€", hours:"8:00-24:00", distance:0 }
+      ],
+      fastfood: [
+        { name:"McDonald's Stephansplatz", description:"McDonald's nel cuore di Vienna, vicino alla cattedrale.", image:"https://images.unsplash.com/photo-1552895638-f7fe08d2f7d5?w=400", lat:48.208556, lng:16.373139, price:"€", hours:"6:00-1:00 (Ven-Sab fino 3:00)", distance:0 },
+        { name:"McDonald's Hauptbahnhof", description:"Grande McDonald's nella stazione centrale.", image:"https://images.unsplash.com/photo-1552895638-f7fe08d2f7d5?w=400", lat:48.185252, lng:16.377482, price:"€", hours:"24 ore", distance:0 },
+        { name:"McDonald's Praterstern", description:"Vicino al Prater e alla ruota panoramica.", image:"https://images.unsplash.com/photo-1552895638-f7fe08d2f7d5?w=400", lat:48.218765, lng:16.391944, price:"€", hours:"24 ore", distance:0 },
+        { name:"Burger King Mariahilferstraße", description:"Via principale dello shopping.", image:"https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400", lat:48.196389, lng:16.340556, price:"€", hours:"8:00-24:00", distance:0 },
+        { name:"Burger King Wien Mitte", description:"Nel mall Wien Mitte.", image:"https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400", lat:48.205833, lng:16.384167, price:"€", hours:"9:00-23:00", distance:0 }
+      ],
+      parks: [
+        { name:"Stadtpark", description:"Parco con statua dorata di Johann Strauss.", image:"https://images.unsplash.com/photo-1590682244746-d7b27e6a5c9b?w=400", lat:48.204722, lng:16.378611, price:"Gratuito", hours:"Sempre aperto", distance:0 },
+        { name:"Volksgarten", description:"Giardino delle rose con oltre 3000 rosai.", image:"https://images.unsplash.com/photo-1559128019-7c1dd7c9eefd?w=400", lat:48.207778, lng:16.361111, price:"Gratuito", hours:"Sempre aperto", distance:0 },
+        { name:"Augarten", description:"Parco barocco con torre antiaerea.", image:"https://images.unsplash.com/photo-1589207821092-9ce3f6132eb9?w=400", lat:48.226111, lng:16.380278, price:"Gratuito", hours:"Sempre aperto", distance:0 }
+      ],
+      shopping: [
+        { name:"Graben & Kohlmarkt", description:"Shopping di lusso.", image:"https://images.unsplash.com/photo-1520176501380-c1d889d43cd5?w=400", lat:48.208889, lng:16.369444, price:"N/D", hours:"10:00-19:00", distance:0 },
+        { name:"Mariahilfer Straße", description:"Via commerciale più lunga (1.8 km).", image:"https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=400", lat:48.196944, lng:16.340278, price:"N/D", hours:"10:00-20:00", distance:0 }
+      ],
+      attractions: [] // dinamico da OSM
+    };
+
+    /* =======================
+       Guida Live - dataset (esempio)
+    ======================= */
+    const liveGuides = [
+      {
+        id: 'stephansdom',
+        name: 'Cattedrale di Santo Stefano',
+        lat: 48.208492, lng: 16.373119,
+        radius: 80,
+        fov: 70,
+        blurb: "Simbolo di Vienna in stile gotico, iniziata nel XII secolo. La torre sud raggiunge i 136 metri.",
+        tts: "Davanti a te la Cattedrale di Santo Stefano, simbolo di Vienna. La torre sud raggiunge i 136 metri.",
+        image: "https://images.unsplash.com/photo-1609856878074-cf31e21ccb6b?w=800",
+        sections: [
+          { title: "Facciata", text: "La facciata fu ricostruita dopo i bombardamenti del 1945." },
+          { title: "Interno", text: "All'interno, altare barocco e navata gotica si fondono armonicamente." }
+        ]
+      },
+      {
+        id: 'hofburg',
+        name: 'Hofburg',
+        lat: 48.206507, lng: 16.365262,
+        radius: 90,
+        fov: 70,
+        blurb: "Antica residenza degli Asburgo. Ospita la Biblioteca Nazionale e la Scuola di Equitazione Spagnola.",
+        tts: "Stai guardando l'Hofburg, antica residenza imperiale degli Asburgo.",
+        image: "https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=800",
+        sections: [
+          { title: "Biblioteca", text: "La Prunksaal è una delle biblioteche barocche più belle del mondo." }
+        ]
+      }
+    ];
+
+    /* =======================
+       Stato & mappa
+    ======================= */
+    let map, markers = [], currentCategory = 'monuments';
+    let userMarker = null, userLocation = null, watchId = null, currentSort = 'default';
+
+    function initMap(){
+      map = L.map('map').setView([hotelLocation.lat, hotelLocation.lng], 14);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution:'© OpenStreetMap contributors'
+      }).addTo(map);
+
+      const hotelIcon = L.divIcon({
+        html:'<div style="background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:#fff;padding:8px;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 3px 10px rgba(0,0,0,.3);">🏨</div>',
+        iconSize:[40,40], iconAnchor:[20,20]
+      });
+
+      L.marker([hotelLocation.lat, hotelLocation.lng], {icon:hotelIcon})
+        .addTo(map)
+        .bindPopup(`<strong>${hotelLocation.name}</strong><br>${hotelLocation.address}`)
+        .openPopup();
+
+      initGeolocation();
+    }
+
+    function initGeolocation(){
+      if("geolocation" in navigator){
+        navigator.geolocation.getCurrentPosition(
+          (pos)=>{ updateUserLocation(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy); start
