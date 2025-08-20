@@ -20,14 +20,19 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            overflow-x: hidden;
+            overflow: hidden;
+            height: 100vh;
+            position: fixed;
+            width: 100%;
         }
 
         .app-container {
-            max-width: 100vw;
-            min-height: 100vh;
+            width: 100vw;
+            height: 100vh;
             background: #fff;
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Header */
@@ -36,13 +41,12 @@
             color: white;
             padding: 15px 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: fixed;
-            width: 100%;
-            top: 0;
+            position: relative;
             z-index: 1000;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0;
         }
 
         .header h1 {
@@ -74,32 +78,60 @@
             transform: translateY(-2px);
         }
 
-        /* Map Container */
-        #map {
-            height: calc(100vh - 280px);
-            width: 100%;
-            margin-top: 70px;
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
             position: relative;
+            overflow: hidden;
         }
 
-        /* Location Info Panel */
+        /* Map Container */
+        #map {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Location Info Panel - Overlay */
         .location-panel {
-            position: fixed;
-            bottom: 0;
+            position: absolute;
+            bottom: -100%;
             left: 0;
             right: 0;
             background: white;
-            padding: 20px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            padding: 0;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.15);
             z-index: 999;
-            max-height: 40vh;
-            overflow-y: auto;
-            transform: translateY(100%);
-            transition: transform 0.3s ease;
+            max-height: 70vh;
+            overflow: hidden;
+            transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            display: flex;
+            flex-direction: column;
         }
 
         .location-panel.active {
-            transform: translateY(0);
+            bottom: 0;
+        }
+
+        /* Drag Handle */
+        .drag-handle {
+            width: 50px;
+            height: 4px;
+            background: #ccc;
+            border-radius: 2px;
+            margin: 10px auto;
+            cursor: grab;
+        }
+
+        .location-panel-content {
+            overflow-y: auto;
+            flex: 1;
+            padding: 0 20px 20px 20px;
+            -webkit-overflow-scrolling: touch;
         }
 
         .location-header {
@@ -109,11 +141,15 @@
             margin-bottom: 15px;
             padding-bottom: 15px;
             border-bottom: 2px solid #f0f0f0;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
         }
 
         .location-title {
-            font-size: 1.3rem;
-            font-weight: 600;
+            font-size: 1.4rem;
+            font-weight: 700;
             color: #333;
         }
 
@@ -126,18 +162,56 @@
             font-weight: 500;
         }
 
+        .close-panel {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            background: rgba(0,0,0,0.1);
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 11;
+        }
+
         .location-image {
             width: 100%;
-            height: 200px;
+            height: 250px;
             object-fit: cover;
             border-radius: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .location-description {
-            color: #666;
-            line-height: 1.6;
+            color: #444;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            font-size: 1rem;
+            text-align: justify;
+        }
+
+        .location-description h3 {
+            color: #667eea;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .location-description p {
             margin-bottom: 15px;
+        }
+
+        .location-description ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .location-description li {
+            margin-bottom: 8px;
         }
 
         /* Audio Controls */
@@ -149,6 +223,9 @@
             align-items: center;
             gap: 15px;
             margin-bottom: 15px;
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
         }
 
         .audio-btn {
@@ -232,8 +309,8 @@
 
         /* Floating Action Button */
         .fab {
-            position: fixed;
-            bottom: 220px;
+            position: absolute;
+            bottom: 20px;
             right: 20px;
             width: 60px;
             height: 60px;
@@ -257,16 +334,17 @@
 
         /* POI List */
         .poi-list {
-            position: fixed;
-            top: 70px;
+            position: absolute;
+            top: 0;
             left: -300px;
             width: 300px;
-            height: calc(100vh - 70px);
+            height: 100%;
             background: white;
             box-shadow: 2px 0 10px rgba(0,0,0,0.1);
             z-index: 997;
             transition: left 0.3s;
             overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .poi-list.active {
@@ -279,6 +357,9 @@
             color: white;
             font-size: 1.2rem;
             font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .poi-item {
@@ -351,7 +432,7 @@
             }
             
             .location-panel {
-                max-height: 50vh;
+                max-height: 80vh;
             }
             
             .poi-list {
@@ -397,6 +478,29 @@
         .current-location-marker {
             animation: pulse 2s infinite;
         }
+
+        /* Notification styles */
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+        }
     </style>
 </head>
 <body>
@@ -417,56 +521,66 @@
             </div>
         </div>
 
-        <!-- Map -->
-        <div id="map"></div>
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Map -->
+            <div id="map"></div>
 
-        <!-- POI List -->
-        <div class="poi-list" id="poiList">
-            <div class="poi-list-header">
-                <i class="fas fa-star"></i> Luoghi da Visitare
-            </div>
-            <div id="poiListContent"></div>
-        </div>
-
-        <!-- Location Panel -->
-        <div class="location-panel" id="locationPanel">
-            <div class="location-header">
-                <h2 class="location-title" id="locationTitle">Seleziona un luogo</h2>
-                <span class="location-type" id="locationType">Info</span>
-            </div>
-            
-            <img class="location-image" id="locationImage" src="" alt="Location" style="display: none;">
-            
-            <div class="location-description" id="locationDescription">
-                Esplora i meravigliosi luoghi di Vienna con la nostra guida interattiva.
-            </div>
-
-            <div class="audio-controls">
-                <button class="audio-btn" id="playBtn" onclick="toggleAudio()">
-                    <i class="fas fa-play"></i>
-                </button>
-                <div class="audio-progress">
-                    <div class="audio-progress-bar" id="progressBar"></div>
+            <!-- POI List -->
+            <div class="poi-list" id="poiList">
+                <div class="poi-list-header">
+                    <i class="fas fa-star"></i> Luoghi da Visitare
                 </div>
-                <div class="audio-time" id="audioTime">0:00 / 0:00</div>
+                <div id="poiListContent"></div>
             </div>
 
-            <div class="nav-buttons">
-                <button class="nav-btn" id="navigateBtn" onclick="navigateToLocation()">
-                    <i class="fas fa-route"></i>
-                    Naviga qui
+            <!-- Location Panel -->
+            <div class="location-panel" id="locationPanel">
+                <div class="drag-handle"></div>
+                <button class="close-panel" onclick="closeLocationPanel()">
+                    <i class="fas fa-times"></i>
                 </button>
-                <button class="nav-btn hotel" onclick="navigateToHotel()">
-                    <i class="fas fa-hotel"></i>
-                    Il mio Hotel
-                </button>
+                
+                <div class="location-panel-content">
+                    <div class="location-header">
+                        <h2 class="location-title" id="locationTitle">Seleziona un luogo</h2>
+                        <span class="location-type" id="locationType">Info</span>
+                    </div>
+                    
+                    <img class="location-image" id="locationImage" src="" alt="Location" style="display: none;">
+                    
+                    <div class="location-description" id="locationDescription">
+                        Esplora i meravigliosi luoghi di Vienna con la nostra guida interattiva.
+                    </div>
+
+                    <div class="audio-controls">
+                        <button class="audio-btn" id="playBtn" onclick="toggleAudio()">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <div class="audio-progress">
+                            <div class="audio-progress-bar" id="progressBar"></div>
+                        </div>
+                        <div class="audio-time" id="audioTime">0:00 / 0:00</div>
+                    </div>
+
+                    <div class="nav-buttons">
+                        <button class="nav-btn" id="navigateBtn" onclick="navigateToLocation()">
+                            <i class="fas fa-route"></i>
+                            Naviga qui
+                        </button>
+                        <button class="nav-btn hotel" onclick="navigateToHotel()">
+                            <i class="fas fa-hotel"></i>
+                            Il mio Hotel
+                        </button>
+                    </div>
+                </div>
             </div>
+
+            <!-- Floating Action Button -->
+            <button class="fab" onclick="showNearbyPOIs()">
+                <i class="fas fa-map-pin"></i>
+            </button>
         </div>
-
-        <!-- Floating Action Button -->
-        <button class="fab" onclick="showNearbyPOIs()">
-            <i class="fas fa-map-pin"></i>
-        </button>
 
         <!-- Loading Spinner -->
         <div class="loading" id="loading" style="display: none;">
@@ -497,7 +611,7 @@
             description: "Il tuo elegante hotel boutique nel cuore di Vienna"
         };
 
-        // Points of Interest
+        // Points of Interest with detailed descriptions
         const POIs = [
             {
                 id: 1,
@@ -506,8 +620,65 @@
                 lat: 48.1845,
                 lng: 16.3122,
                 image: "https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=800",
-                description: "Il magnifico Palazzo di Schönbrunn è uno dei più importanti monumenti culturali dell'Austria. Antica residenza estiva imperiale degli Asburgo, con 1.441 stanze è uno dei più grandi complessi barocchi d'Europa. I suoi splendidi giardini, il labirinto, la Gloriette e lo zoo più antico del mondo lo rendono una destinazione imperdibile.",
-                audioText: "Benvenuti al Palazzo di Schönbrunn, la perla barocca di Vienna. Questo maestoso palazzo fu la residenza estiva della famiglia imperiale austriaca. Costruito nel diciassettesimo secolo, ospita magnifiche sale di rappresentanza, appartamenti imperiali e giardini mozzafiato che si estendono per chilometri."
+                description: `
+                    <h3>Il Palazzo Imperiale di Schönbrunn</h3>
+                    <p>Il Palazzo di Schönbrunn è uno dei più importanti monumenti culturali dell'Austria e dal 1996 è patrimonio mondiale dell'UNESCO. Con le sue 1.441 stanze, è uno dei più grandi complessi barocchi d'Europa e rappresenta tre secoli di storia imperiale austriaca.</p>
+                    
+                    <h3>Storia e Architettura</h3>
+                    <p>La storia di Schönbrunn inizia nel XIV secolo con il "Katterburg", una proprietà con mulino. Nel 1569 passò agli Asburgo e l'imperatore Massimiliano II la trasformò in una riserva di caccia. Il nome "Schönbrunn" (bella fonte) deriva da una sorgente scoperta dall'imperatore Mattia nel 1619.</p>
+                    <p>Dopo l'assedio turco del 1683, l'imperatore Leopoldo I commissionò a Johann Bernhard Fischer von Erlach la costruzione di un palazzo di caccia barocco. Maria Teresa d'Austria (1740-1780) trasformò il palazzo nella residenza estiva imperiale, affidando i lavori all'architetto Nikolaus Pacassi. Il caratteristico colore giallo "Maria Teresa" risale a questo periodo.</p>
+                    
+                    <h3>Gli Appartamenti Imperiali</h3>
+                    <p>Le 40 stanze aperte al pubblico mostrano come viveva la famiglia imperiale. Highlights includono:</p>
+                    <ul>
+                        <li>La Grande Galleria: lunga 43 metri, con affreschi di Gregorio Guglielmi</li>
+                        <li>La Sala degli Specchi: dove Mozart si esibì a 6 anni davanti a Maria Teresa</li>
+                        <li>La Camera del Milione: rivestita di pregiatissimo palissandro</li>
+                        <li>Il Salone Cinese Blu: dove Carlo I firmò l'abdicazione nel 1918</li>
+                        <li>Gli appartamenti di Francesco Giuseppe e Sissi</li>
+                    </ul>
+                    
+                    <h3>I Giardini</h3>
+                    <p>I giardini barocchi di 1,2 km² furono aperti al pubblico nel 1779. Includono:</p>
+                    <ul>
+                        <li>Il Parterre: con elaborate aiuole geometriche</li>
+                        <li>La Gloriette: costruita nel 1775 sulla collina, offre vista panoramica</li>
+                        <li>La Fontana di Nettuno: monumentale gruppo scultoreo</li>
+                        <li>Le Rovine Romane: follia architettonica del 1778</li>
+                        <li>Il Labirinto: ricostruito nel 1998 secondo il modello storico</li>
+                        <li>La Casa delle Palme: serra in ferro e vetro del 1882</li>
+                    </ul>
+                    
+                    <h3>Il Tiergarten</h3>
+                    <p>Lo zoo di Schönbrunn, fondato nel 1752, è il più antico zoo del mondo ancora in funzione. Oggi ospita oltre 700 specie animali ed è famoso per i suoi panda giganti.</p>
+                    
+                    <h3>Informazioni Pratiche</h3>
+                    <p>Orari: 8:00-17:30 (apr-giu, set-ott), 8:00-18:30 (lug-ago), 8:00-17:00 (nov-mar)</p>
+                    <p>Si consiglia di acquistare i biglietti online per evitare code. Il Grand Tour include tutte le 40 stanze visitabili.</p>
+                `,
+                audioText: `Benvenuti al magnifico Palazzo di Schönbrunn, la Versailles austriaca e uno dei complessi barocchi più importanti d'Europa. 
+
+                Davanti a voi si erge la residenza estiva degli Asburgo, con la sua inconfondibile facciata color giallo Maria Teresa che si estende per ben 175 metri. Questo colore caratteristico fu scelto dall'imperatrice Maria Teresa nel diciottesimo secolo e da allora è diventato il simbolo del palazzo.
+
+                Il palazzo che vedete oggi è il risultato di tre secoli di storia imperiale. Originariamente era una semplice riserva di caccia chiamata Katterburg. Fu l'imperatore Leopoldo Primo che, dopo la vittoria sui Turchi nel 1683, decise di costruire qui un palazzo che rivaleggiasse con Versailles. Il grande architetto barocco Johann Bernhard Fischer von Erlach progettò inizialmente un palazzo ancora più grandioso di quello che vediamo oggi, ma i costi astronomici costrinsero a ridimensionare il progetto.
+
+                Fu Maria Teresa d'Austria, la grande imperatrice illuminata, a trasformare Schönbrunn in quello che è oggi. Durante il suo regno dal 1740 al 1780, il palazzo divenne il centro della vita politica e culturale dell'impero. Qui nacquero molti dei suoi sedici figli, tra cui la futura regina di Francia Maria Antonietta.
+
+                Entrando nel palazzo, attraverserete le quaranta stanze aperte al pubblico, ognuna con la sua storia da raccontare. La Grande Galleria, lunga quarantatré metri e alta dieci, vi lascerà senza fiato con i suoi affreschi del soffitto che celebrano il regno di Maria Teresa. In questa sala si tennero balli sfarzosi e ricevimenti di stato. Nel 1961, qui si incontrarono Kennedy e Krusciov durante la guerra fredda.
+
+                Non potete perdere la Sala degli Specchi, dove nel 1762 un bambino prodigio di sei anni di nome Wolfgang Amadeus Mozart diede il suo primo concerto a corte. Si racconta che dopo l'esibizione, il piccolo Mozart saltò in braccio all'imperatrice Maria Teresa e la baciò, gesto che divertì molto la sovrana.
+
+                Gli appartamenti dell'imperatore Francesco Giuseppe e della sua amata Sissi vi mostreranno la vita quotidiana della coppia imperiale. Francesco Giuseppe, che regnò per sessantotto anni, si alzava ogni mattina alle quattro e lavorava nel suo studio spartano fino a tarda sera. La sua scrivania è ancora come l'ha lasciata nel 1916.
+
+                I giardini di Schönbrunn sono un capolavoro del barocco. Progettati alla francese con parterre geometrici, fontane monumentali e viali alberati, si estendono per oltre un chilometro quadrato. Salendo alla Gloriette sulla collina, godrete di una vista mozzafiato su tutto il palazzo e su Vienna. La Gloriette fu costruita nel 1775 per commemorare la vittoria austriaca nella battaglia di Kolin.
+
+                Non dimenticate di visitare il labirinto, dove potrete perdervi tra le siepi come facevano i nobili del settecento, e la Casa delle Palme, una delle serre in ferro e vetro più grandi d'Europa, che ospita piante tropicali in un ambiente che sembra uscito da un romanzo di Jules Verne.
+
+                Lo zoo di Schönbrunn, fondato nel 1752 come serraglio imperiale, è lo zoo più antico del mondo ancora in funzione. Oggi è uno dei più moderni e rispettosi del benessere animale, famoso soprattutto per i suoi panda giganti, dono della Cina.
+
+                Schönbrunn non è solo un palazzo, è un viaggio attraverso la gloria e il tramonto dell'impero asburgico. Qui, nel Salone Cinese Blu, l'ultimo imperatore Carlo Primo firmò la sua abdicazione l'undici novembre 1918, ponendo fine a seicento anni di dominio asburgico.
+
+                Prendetevi almeno mezza giornata per visitare questo complesso straordinario. Ogni angolo racconta una storia, ogni sala è un tuffo nel passato glorioso di Vienna imperiale.`
             },
             {
                 id: 2,
@@ -516,572 +687,54 @@
                 lat: 48.2084,
                 lng: 16.3731,
                 image: "https://images.unsplash.com/photo-1609856878074-cf31e21ccf-0?w=800",
-                description: "Il Duomo di Santo Stefano (Stephansdom) è il simbolo di Vienna. Questa maestosa cattedrale gotica, con il suo caratteristico tetto di tegole colorate e la torre sud alta 136 metri, domina il centro storico. All'interno si trovano preziose opere d'arte, le catacombe e la campana Pummerin.",
-                audioText: "La Cattedrale di Santo Stefano è il cuore spirituale di Vienna. La sua guglia meridionale, chiamata affettuosamente Steffl dai viennesi, svetta per centotrentasei metri nel cielo. Il tetto è decorato con duecentotrenta mila tegole smaltate che formano lo stemma austriaco."
-            },
-            {
-                id: 3,
-                name: "Hofburg",
-                type: "Palazzo",
-                lat: 48.2069,
-                lng: 16.3658,
-                image: "https://images.unsplash.com/photo-1559564484-e48b3e040ff4?w=800",
-                description: "Il complesso dell'Hofburg è stato per oltre 600 anni il centro del potere austriaco. Oggi ospita la residenza del Presidente austriaco, numerosi musei tra cui il Museo di Sissi, gli Appartamenti Imperiali, la Biblioteca Nazionale e la famosa Scuola di Equitazione Spagnola.",
-                audioText: "L'Hofburg è stato il centro del potere imperiale per più di seicento anni. Qui hanno vissuto gli Asburgo, inclusa l'amata Imperatrice Sissi. Il complesso comprende diciotto ali, diciannove cortili e duemila seicento stanze."
-            },
-            {
-                id: 4,
-                name: "Belvedere",
-                type: "Museo",
-                lat: 48.1915,
-                lng: 16.3807,
-                image: "https://images.unsplash.com/photo-1587302164675-89588a9f5?w=800",
-                description: "Il Belvedere è un capolavoro barocco composto da due palazzi (Superiore e Inferiore) collegati da splendidi giardini. Ospita la più grande collezione di opere di Gustav Klimt al mondo, incluso il famoso 'Bacio', oltre a capolavori di Schiele e Kokoschka.",
-                audioText: "Il Belvedere, costruito come residenza estiva del Principe Eugenio di Savoia, è oggi uno dei musei più importanti al mondo. Qui potrete ammirare il celebre Bacio di Gustav Klimt, simbolo del Secessionismo viennese."
-            },
-            {
-                id: 5,
-                name: "Prater",
-                type: "Parco",
-                lat: 48.2168,
-                lng: 16.3958,
-                image: "https://images.unsplash.com/photo-1569163139394-de4798aa62b?w=800",
-                description: "Il Prater è il grande parco pubblico di Vienna, famoso per la sua ruota panoramica gigante (Riesenrad), simbolo della città. Oltre al luna park, offre vasti spazi verdi, viali alberati perfetti per passeggiate, jogging e picnic.",
-                audioText: "Il Prater vi accoglie con la sua iconica ruota panoramica, la Riesenrad, alta sessantacinque metri. Costruita nel milleottocentonovantasette, offre una vista spettacolare su tutta Vienna. Il parco si estende per sei chilometri quadrati di verde."
-            },
-            {
-                id: 6,
-                name: "Kunsthistorisches Museum",
-                type: "Museo",
-                lat: 48.2036,
-                lng: 16.3615,
-                image: "https://images.unsplash.com/photo-1581683705068-ca8f49fc7f45?w=800",
-                description: "Il Museo di Storia dell'Arte è uno dei musei più importanti al mondo. Ospita le collezioni imperiali degli Asburgo con capolavori di Bruegel, Raffaello, Vermeer, Velázquez, Rubens e Rembrandt. L'edificio stesso è un'opera d'arte con affreschi di Gustav Klimt.",
-                audioText: "Il Kunsthistorisches Museum custodisce tesori inestimabili. La collezione di Bruegel è la più grande al mondo, mentre la Kunstkammer presenta meraviglie come la Saliera di Benvenuto Cellini."
-            },
-            {
-                id: 7,
-                name: "Naschmarkt",
-                type: "Mercato",
-                lat: 48.1987,
-                lng: 16.3628,
-                image: "https://images.unsplash.com/photo-1555992643-a97955e6e6fb?w=800",
-                description: "Il Naschmarkt è il mercato più famoso di Vienna. Con oltre 120 bancarelle e ristoranti, offre prodotti freschi, specialità internazionali, spezie esotiche e la vera atmosfera viennese. Il sabato si tiene anche un vivace mercato delle pulci.",
-                audioText: "Il Naschmarkt è il ventre di Vienna. Dal sedicesimo secolo, questo mercato offre prodotti freschi e specialità da tutto il mondo. Il nome deriva da Asch, il contenitore di legno per il latte, che qui si vendeva."
-            },
-            {
-                id: 8,
-                name: "Opera di Stato",
-                type: "Teatro",
-                lat: 48.2029,
-                lng: 16.3690,
-                image: "https://images.unsplash.com/photo-1580809878711-492e1e8f6b00?w=800",
-                description: "La Wiener Staatsoper è uno dei teatri d'opera più prestigiosi al mondo. Inaugurata nel 1869, ospita circa 350 spettacoli all'anno. L'edificio neo-rinascimentale è un capolavoro architettonico e offre visite guidate degli interni sontuosi.",
-                audioText: "La Staatsoper è il tempio della musica classica. Qui hanno diretto i più grandi maestri, da Gustav Mahler a Herbert von Karajan. Ogni anno, il Ballo dell'Opera trasforma il teatro nel salone da ballo più elegante del mondo."
-            }
-        ];
-
-        // Initialize Map
-        function initMap() {
-            // Vienna city center coordinates
-            map = L.map('map').setView([48.2082, 16.3738], 13);
-
-            // Add OpenStreetMap tiles
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19
-            }).addTo(map);
-
-            // Add POI markers
-            POIs.forEach(poi => {
-                const icon = L.divIcon({
-                    className: 'custom-marker',
-                    html: `<div class="custom-marker"><div class="marker-icon"><i class="fas fa-star"></i></div></div>`,
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 30]
-                });
-
-                const marker = L.marker([poi.lat, poi.lng], { icon })
-                    .addTo(map)
-                    .on('click', () => selectPOI(poi));
-
-                marker.bindTooltip(poi.name, {
-                    permanent: false,
-                    direction: 'top'
-                });
-            });
-
-            // Add Hotel marker
-            const hotelIcon = L.divIcon({
-                className: 'custom-marker',
-                html: `<div class="custom-marker" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"><div class="marker-icon"><i class="fas fa-hotel"></i></div></div>`,
-                iconSize: [30, 30],
-                iconAnchor: [15, 30]
-            });
-
-            L.marker([HOTEL.lat, HOTEL.lng], { icon: hotelIcon })
-                .addTo(map)
-                .bindPopup(`<strong>${HOTEL.name}</strong><br>${HOTEL.address}`);
-
-            // Get user location
-            getUserLocation();
-            
-            // Update POI list
-            updatePOIList();
-        }
-
-        // Get User Location
-        function getUserLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(
-                    position => {
-                        currentLocation = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        };
-
-                        if (userMarker) {
-                            userMarker.setLatLng([currentLocation.lat, currentLocation.lng]);
-                        } else {
-                            const userIcon = L.divIcon({
-                                className: 'current-location-marker',
-                                html: `<div style="width: 20px; height: 20px; background: #4285F4; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"></div>`,
-                                iconSize: [20, 20],
-                                iconAnchor: [10, 10]
-                            });
-
-                            userMarker = L.marker([currentLocation.lat, currentLocation.lng], { icon: userIcon })
-                                .addTo(map)
-                                .bindPopup("La tua posizione");
-                        }
-
-                        updateDistances();
-                    },
-                    error => {
-                        console.error("Errore geolocalizzazione:", error);
-                        // Use Vienna center as fallback
-                        currentLocation = { lat: 48.2082, lng: 16.3738 };
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        maximumAge: 0,
-                        timeout: 5000
-                    }
-                );
-            }
-        }
-
-        // Calculate distance between two points
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Earth radius in km
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            const distance = R * c;
-            return distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`;
-        }
-
-        // Update distances in POI list
-        function updateDistances() {
-            if (!currentLocation) return;
-
-            const listContent = document.getElementById('poiListContent');
-            listContent.innerHTML = '';
-
-            POIs.forEach(poi => {
-                const distance = calculateDistance(
-                    currentLocation.lat, currentLocation.lng,
-                    poi.lat, poi.lng
-                );
-
-                const poiItem = document.createElement('div');
-                poiItem.className = 'poi-item';
-                poiItem.onclick = () => {
-                    selectPOI(poi);
-                    togglePOIList();
-                };
-
-                poiItem.innerHTML = `
-                    <div class="poi-icon">
-                        <i class="fas fa-${getIconForType(poi.type)}"></i>
-                    </div>
-                    <div class="poi-info">
-                        <div class="poi-name">${poi.name}</div>
-                        <div class="poi-distance">${distance} da te</div>
-                    </div>
-                `;
-
-                listContent.appendChild(poiItem);
-            });
-        }
-
-        // Get icon for POI type
-        function getIconForType(type) {
-            const icons = {
-                'Palazzo': 'crown',
-                'Chiesa': 'church',
-                'Museo': 'palette',
-                'Parco': 'tree',
-                'Mercato': 'shopping-basket',
-                'Teatro': 'theater-masks'
-            };
-            return icons[type] || 'star';
-        }
-
-        // Select POI
-        function selectPOI(poi) {
-            selectedPOI = poi;
-            
-            // Update location panel
-            document.getElementById('locationTitle').textContent = poi.name;
-            document.getElementById('locationType').textContent = poi.type;
-            document.getElementById('locationDescription').textContent = poi.description;
-            
-            const img = document.getElementById('locationImage');
-            img.src = poi.image;
-            img.style.display = 'block';
-
-            // Show location panel
-            document.getElementById('locationPanel').classList.add('active');
-
-            // Center map on POI
-            map.setView([poi.lat, poi.lng], 16);
-
-            // Stop any playing audio
-            stopAudio();
-        }
-
-        // Toggle POI List
-        function togglePOIList() {
-            document.getElementById('poiList').classList.toggle('active');
-        }
-
-        // Center on user location
-        function centerOnUser() {
-            if (currentLocation) {
-                map.setView([currentLocation.lat, currentLocation.lng], 15);
-                if (userMarker) {
-                    userMarker.openPopup();
-                }
-            } else {
-                alert("Posizione non disponibile. Assicurati di aver autorizzato la geolocalizzazione.");
-            }
-        }
-
-        // Show nearby POIs
-        function showNearbyPOIs() {
-            if (!currentLocation) {
-                alert("Posizione non disponibile. Attendi il caricamento della tua posizione.");
-                return;
-            }
-
-            // Calculate distances and sort POIs
-            const poisWithDistance = POIs.map(poi => {
-                const R = 6371;
-                const dLat = (poi.lat - currentLocation.lat) * Math.PI / 180;
-                const dLon = (poi.lng - currentLocation.lng) * Math.PI / 180;
-                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(currentLocation.lat * Math.PI / 180) * Math.cos(poi.lat * Math.PI / 180) *
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                const distance = R * c;
-                
-                return { ...poi, distance };
-            }).sort((a, b) => a.distance - b.distance);
-
-            // Select nearest POI
-            if (poisWithDistance.length > 0) {
-                selectPOI(poisWithDistance[0]);
-                
-                // Show notification
-                const distanceText = poisWithDistance[0].distance < 1 
-                    ? `${Math.round(poisWithDistance[0].distance * 1000)}m` 
-                    : `${poisWithDistance[0].distance.toFixed(1)}km`;
+                description: `
+                    <h3>Stephansdom - Il Cuore di Vienna</h3>
+                    <p>La Cattedrale di Santo Stefano (Stephansdom) è il simbolo religioso e architettonico più importante di Vienna. Questa maestosa cattedrale gotica ha vegliato sulla città per oltre 800 anni ed è stata testimone di momenti cruciali della storia austriaca.</p>
                     
-                showNotification(`Il luogo più vicino è ${poisWithDistance[0].name} a ${distanceText} da te`);
-            }
-        }
-
-        // Show notification
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 100px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 15px 25px;
-                border-radius: 30px;
-                box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-                z-index: 2000;
-                animation: slideDown 0.3s ease;
-                max-width: 80%;
-                text-align: center;
-            `;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.style.animation = 'slideUp 0.3s ease';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-        }
-
-        // Audio Controls
-        function toggleAudio() {
-            if (!selectedPOI) return;
-
-            const playBtn = document.getElementById('playBtn');
-            
-            if (isPlaying) {
-                stopAudio();
-            } else {
-                playAudio();
-            }
-        }
-
-        function playAudio() {
-            if (!selectedPOI || !selectedPOI.audioText) return;
-
-            const playBtn = document.getElementById('playBtn');
-            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-            playBtn.classList.add('pause');
-            isPlaying = true;
-
-            // Use Web Speech API for Italian speech
-            if ('speechSynthesis' in window) {
-                currentUtterance = new SpeechSynthesisUtterance(selectedPOI.audioText);
-                currentUtterance.lang = 'it-IT';
-                currentUtterance.rate = 0.9;
-                currentUtterance.pitch = 1;
-                currentUtterance.volume = 1;
-
-                currentUtterance.onend = () => {
-                    stopAudio();
-                };
-
-                currentUtterance.onerror = (event) => {
-                    console.error('Errore sintesi vocale:', event);
-                    stopAudio();
-                };
-
-                // Simulate progress bar
-                const duration = selectedPOI.audioText.length * 50; // Approximate duration
-                let progress = 0;
-                const progressInterval = setInterval(() => {
-                    if (!isPlaying) {
-                        clearInterval(progressInterval);
-                        return;
-                    }
-                    progress += 100;
-                    const percentage = (progress / duration) * 100;
-                    document.getElementById('progressBar').style.width = Math.min(percentage, 100) + '%';
+                    <h3>Storia Millenaria</h3>
+                    <p>La prima chiesa fu consacrata nel 1147 in stile romanico. Dell'edificio originale rimangono oggi le Torri dei Pagani e il Portale dei Giganti. La ricostruzione gotica iniziò nel XIV secolo sotto il duca Rodolfo IV "il Fondatore", che pose la prima pietra nel 1359.</p>
+                    <p>Nel 1433 iniziò la costruzione della torre sud (Südturm), completata nel 1433 e alta 136,44 metri. La torre nord rimase incompiuta: secondo la leggenda, l'architetto Hans Puchsbaum fece un patto con il diavolo per completarla, ma pronunciò il nome di Cristo e precipitò dalla torre.</p>
                     
-                    const currentTime = Math.floor(progress / 1000);
-                    const totalTime = Math.floor(duration / 1000);
-                    document.getElementById('audioTime').textContent = 
-                        `${formatTime(currentTime)} / ${formatTime(totalTime)}`;
+                    <h3>Architettura e Tesori</h3>
+                    <p>Esterni magnifici:</p>
+                    <ul>
+                        <li>Il tetto con 230.000 tegole smaltate che formano l'aquila bicipite imperiale</li>
+                        <li>La torre sud "Steffl", simbolo di Vienna, con 343 gradini</li>
+                        <li>La Pummerin nella torre nord, una delle campane più grandi d'Europa (21 tonnellate)</li>
+                        <li>Il Portale dei Giganti con sculture romaniche del 1230</li>
+                    </ul>
                     
-                    if (progress >= duration) {
-                        clearInterval(progressInterval);
-                    }
-                }, 100);
-
-                speechSynthesis.speak(currentUtterance);
-            } else {
-                alert("Il tuo browser non supporta la sintesi vocale. Prova con un browser più recente.");
-                stopAudio();
-            }
-        }
-
-        function stopAudio() {
-            const playBtn = document.getElementById('playBtn');
-            playBtn.innerHTML = '<i class="fas fa-play"></i>';
-            playBtn.classList.remove('pause');
-            isPlaying = false;
-
-            if (speechSynthesis && speechSynthesis.speaking) {
-                speechSynthesis.cancel();
-            }
-
-            document.getElementById('progressBar').style.width = '0%';
-            document.getElementById('audioTime').textContent = '0:00 / 0:00';
-        }
-
-        function formatTime(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
-        }
-
-        // Navigation Functions
-        function navigateToLocation() {
-            if (!selectedPOI) {
-                alert("Seleziona prima un luogo da visitare");
-                return;
-            }
-
-            if (!currentLocation) {
-                alert("Posizione corrente non disponibile");
-                return;
-            }
-
-            // Open navigation in external maps app
-            const url = `https://www.google.com/maps/dir/?api=1&origin=${currentLocation.lat},${currentLocation.lng}&destination=${selectedPOI.lat},${selectedPOI.lng}&travelmode=walking`;
-            window.open(url, '_blank');
-        }
-
-        function navigateToHotel() {
-            if (!currentLocation) {
-                alert("Posizione corrente non disponibile");
-                return;
-            }
-
-            // Open navigation to hotel
-            const url = `https://www.google.com/maps/dir/?api=1&origin=${currentLocation.lat},${currentLocation.lng}&destination=${HOTEL.lat},${HOTEL.lng}&travelmode=walking`;
-            window.open(url, '_blank');
-        }
-
-        // Update POI List
-        function updatePOIList() {
-            const listContent = document.getElementById('poiListContent');
-            listContent.innerHTML = '';
-
-            POIs.forEach(poi => {
-                const poiItem = document.createElement('div');
-                poiItem.className = 'poi-item';
-                poiItem.onclick = () => {
-                    selectPOI(poi);
-                    togglePOIList();
-                };
-
-                poiItem.innerHTML = `
-                    <div class="poi-icon">
-                        <i class="fas fa-${getIconForType(poi.type)}"></i>
-                    </div>
-                    <div class="poi-info">
-                        <div class="poi-name">${poi.name}</div>
-                        <div class="poi-distance">Calcolo distanza...</div>
-                    </div>
-                `;
-
-                listContent.appendChild(poiItem);
-            });
-        }
-
-        // Add CSS animations
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideDown {
-                from {
-                    opacity: 0;
-                    transform: translateX(-50%) translateY(-20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateX(-50%) translateY(0);
-                }
-            }
-            
-            @keyframes slideUp {
-                from {
-                    opacity: 1;
-                    transform: translateX(-50%) translateY(0);
-                }
-                to {
-                    opacity: 0;
-                    transform: translateX(-50%) translateY(-20px);
-                }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // Service Worker for offline support (optional)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(err => {
-                console.log('Service Worker registration failed:', err);
-            });
-        }
-
-        // Handle orientation change
-        window.addEventListener('orientationchange', () => {
-            setTimeout(() => {
-                map.invalidateSize();
-            }, 500);
-        });
-
-        // Handle resize
-        window.addEventListener('resize', () => {
-            map.invalidateSize();
-        });
-
-        // Initialize app when DOM is ready
-        document.addEventListener('DOMContentLoaded', () => {
-            initMap();
-            
-            // Show welcome message
-            setTimeout(() => {
-                showNotification("Benvenuto a Vienna! Esplora i luoghi più belli della città 🎭");
-            }, 1000);
-
-            // Request notification permission for future features
-            if ('Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission();
-            }
-        });
-
-        // Prevent scrolling when location panel is active
-        document.getElementById('locationPanel').addEventListener('touchmove', (e) => {
-            e.stopPropagation();
-        });
-
-        // Add keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                document.getElementById('locationPanel').classList.remove('active');
-                document.getElementById('poiList').classList.remove('active');
-            }
-            if (e.key === ' ' && selectedPOI) {
-                e.preventDefault();
-                toggleAudio();
-            }
-            if (e.key === 'l' || e.key === 'L') {
-                togglePOIList();
-            }
-            if (e.key === 'c' || e.key === 'C') {
-                centerOnUser();
-            }
-        });
-
-        // Progressive enhancement
-        if ('vibrate' in navigator) {
-            document.querySelectorAll('button').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    navigator.vibrate(10);
-                });
-            });
-        }
-
-        // Check for updates periodically
-        setInterval(() => {
-            if (currentLocation) {
-                updateDistances();
-            }
-        }, 30000); // Update every 30 seconds
-
-        // Handle offline/online status
-        window.addEventListener('online', () => {
-            showNotification("Connessione ripristinata ✓");
-        });
-
-        window.addEventListener('offline', () => {
-            showNotification("Modalità offline - Alcune funzioni potrebbero non essere disponibili");
-        });
-    </script>
-</body>
-</html>
+                    <p>Interni straordinari:</p>
+                    <ul>
+                        <li>L'altare maggiore barocco del 1647 con la lapidazione di Santo Stefano</li>
+                        <li>Il pulpito gotico di Anton Pilgram (1514) con i quattro Padri della Chiesa</li>
+                        <li>L'altare di Wiener Neustadt del 1447 con 72 santi dipinti</li>
+                        <li>Le vetrate medievali del coro, miracolosamente sopravvissute alla guerra</li>
+                        <li>Il sepolcro di Federico III in marmo rosso, capolavoro del tardo gotico</li>
+                    </ul>
+                    
+                    <h3>Le Catacombe</h3>
+                    <p>Sotto la cattedrale si estendono le catacombe, dove riposano:</p>
+                    <ul>
+                        <li>I vescovi e cardinali di Vienna</li>
+                        <li>Il duca Rodolfo IV il Fondatore</li>
+                        <li>Le urne con le viscere di 56 membri degli Asburgo</li>
+                        <li>Oltre 11.000 viennesi sepolti fino al 1783</li>
+                    </ul>
+                    
+                    <h3>Eventi Storici</h3>
+                    <p>La cattedrale è stata teatro di eventi memorabili:</p>
+                    <ul>
+                        <li>1782: Mozart sposò Constanze Weber</li>
+                        <li>1791: Funerale di Mozart (in forma povera nella cappella della Croce)</li>
+                        <li>1805 e 1809: Napoleone ordinò di rispettare la cattedrale</li>
+                        <li>1916: Funerale dell'imperatore Francesco Giuseppe</li>
+                        <li>1945: Incendio devastante durante la Seconda Guerra Mondiale</li>
+                        <li>1948-1962: Ricostruzione con il contributo di tutta l'Austria</li>
+                    </ul>
+                    
+                    <h3>Curiosità</h3>
+                    <p>• La "O5" incisa sul muro esterno è il simbolo della resistenza austriaca contro i nazisti</p>
+                    <p>• Nella torre sud c'è un appartamento per il guardiano della torre</p>
+                    <p>• Il tetto ospita colonie di pipistrelli protetti</p>
+                    <p>• Ogni capodanno la Pummerin suona per annunciare il nuovo anno in tutta l'Austria</p>
