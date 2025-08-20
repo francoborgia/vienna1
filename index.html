@@ -55,6 +55,54 @@
     .btn-outline{background:#fff;border:2px solid #0b73ff;color:#0b73ff}
     .nav-option{padding:10px;margin:8px 0;background:#f8f9fa;border-radius:8px;cursor:pointer;transition:.2s}
     .nav-option:hover{background:#e9ecef}
+    
+    /* Guida Interattiva Styles */
+    .interactive-guide{display:none}
+    .interactive-guide.active{display:block}
+    .guide-header{display:flex;gap:20px;margin-bottom:30px;align-items:flex-start}
+    .guide-main-image{width:300px;height:200px;object-fit:cover;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.15)}
+    .guide-info{flex:1}
+    .guide-title{font-size:2em;font-weight:700;color:#333;margin-bottom:10px}
+    .guide-subtitle{color:#666;font-size:1.1em;margin-bottom:15px}
+    .guide-quick-facts{background:#f8f9fa;padding:15px;border-radius:8px;margin-bottom:20px}
+    .guide-quick-facts h4{margin-bottom:10px;color:#444}
+    .guide-quick-facts .fact{display:flex;justify-content:space-between;margin:5px 0;padding:5px 0;border-bottom:1px solid #eee}
+    .guide-quick-facts .fact:last-child{border-bottom:none}
+    .guide-navigation{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+    .guide-nav-btn{padding:8px 16px;background:#fff;border:2px solid #667eea;border-radius:20px;cursor:pointer;transition:.3s}
+    .guide-nav-btn.active{background:#667eea;color:#fff}
+    .guide-content{background:#fff;border-radius:12px;padding:20px;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+    .guide-section{display:none}
+    .guide-section.active{display:block}
+    .guide-section h3{color:#333;margin-bottom:15px;font-size:1.4em}
+    .guide-section p{line-height:1.7;margin-bottom:15px;color:#444}
+    .guide-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin:20px 0}
+    .guide-gallery img{width:100%;height:150px;object-fit:cover;border-radius:8px;cursor:pointer;transition:.3s}
+    .guide-gallery img:hover{transform:scale(1.05)}
+    .guide-audio-controls{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:15px;border-radius:10px;margin:15px 0;text-align:center}
+    .guide-audio-btn{background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);color:#fff;padding:10px 20px;border-radius:25px;cursor:pointer;margin:0 5px;transition:.3s}
+    .guide-audio-btn:hover{background:rgba(255,255,255,.3)}
+    .guide-audio-btn.playing{background:rgba(255,255,255,.4);animation:pulse 2s infinite}
+    .timeline{margin:20px 0;padding:20px;background:#f8f9fa;border-radius:10px}
+    .timeline-item{display:flex;gap:15px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #e0e0e0}
+    .timeline-item:last-child{border-bottom:none}
+    .timeline-date{font-weight:700;color:#667eea;min-width:80px}
+    .timeline-content{flex:1}
+    .architecture-details{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:20px 0}
+    .architecture-item{background:#fff;padding:15px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+    @media(max-width:768px){
+      .guide-header{flex-direction:column}
+      .guide-main-image{width:100%}
+      .architecture-details{grid-template-columns:1fr}
+    }
+    /* Modal per galleria immagini */
+    .image-modal{display:none;position:fixed;z-index:2000;inset:0;background:rgba(0,0,0,.9)}
+    .image-modal-content{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:90%;max-height:90%;border-radius:10px;overflow:hidden}
+    .image-modal img{width:100%;height:100%;object-fit:contain}
+    .image-modal-close{position:absolute;top:20px;right:30px;color:#fff;font-size:40px;cursor:pointer;z-index:2001}
+    .image-modal-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.3);color:#fff;border:none;font-size:30px;padding:10px 15px;cursor:pointer;border-radius:5px}
+    .image-modal-prev{left:20px}
+    .image-modal-next{right:20px}
     @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(102,126,234,.7)}70%{box-shadow:0 0 0 10px rgba(102,126,234,0)}100%{box-shadow:0 0 0 0 rgba(102,126,234,0)}}
   </style>
 </head>
@@ -106,9 +154,38 @@
           <button class="category-btn" data-category="shopping">🛍️ Shopping</button>
           <button class="category-btn" data-category="attractions" id="btnAttractions">✨ Attrazioni (OSM)</button>
           <button class="category-btn" id="btnLoadAttractions">⤵️ Carica altre attrazioni</button>
+          <button class="category-btn" id="btnInteractiveGuide">🎧 Guida Interattiva</button>
         </div>
 
         <div class="places-grid" id="placesGrid"></div>
+        
+        <!-- Guida Interattiva -->
+        <div class="interactive-guide" id="interactiveGuide">
+          <button onclick="showMainGuide()" style="margin-bottom:20px;padding:10px 20px;background:#667eea;color:#fff;border:none;border-radius:8px;cursor:pointer;">← Torna alla lista</button>
+          
+          <div class="guide-header">
+            <img id="guideMainImage" class="guide-main-image" src="" alt="">
+            <div class="guide-info">
+              <h1 class="guide-title" id="guideMainTitle"></h1>
+              <p class="guide-subtitle" id="guideMainSubtitle"></p>
+              
+              <div class="guide-quick-facts" id="guideQuickFacts">
+                <h4>📋 Informazioni Rapide</h4>
+              </div>
+              
+              <div class="guide-audio-controls">
+                <div style="margin-bottom:10px;">🎧 Audio Guida</div>
+                <button class="guide-audio-btn" id="playIntroBtn">▶️ Introduzione</button>
+                <button class="guide-audio-btn" id="playCurrentBtn">🔊 Sezione Corrente</button>
+                <button class="guide-audio-btn" id="stopAudioBtn">⏹️ Stop</button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="guide-navigation" id="guideNavigation"></div>
+          
+          <div class="guide-content" id="guideContent"></div>
+        </div>
       </div>
 
       <!-- Colonna destra: AirTag + Guida Live -->
@@ -178,7 +255,285 @@
           </div>
         </div>
 
-        <div id="guideNone" class="tip">Nessun POI davanti a te al momento.</div>
+        <div id="guide    /* =======================
+       Guida Interattiva - Database dettagliato
+    ======================= */
+    const interactiveGuides = {
+      stephansdom: {
+        id: 'stephansdom',
+        title: 'Cattedrale di Santo Stefano (Stephansdom)',
+        subtitle: 'Il cuore spirituale e simbolo di Vienna',
+        mainImage: 'https://images.unsplash.com/photo-1609856878074-cf31e21ccb6b?w=800',
+        quickFacts: {
+          'Costruzione': '1137-1160 (parti più antiche)',
+          'Stile': 'Romanico e Gotico',
+          'Altezza torre': '136,4 metri',
+          'Lunghezza': '107 metri',
+          'Larghezza': '34 metri',
+          'Visitatori annui': '3 milioni',
+          'Indirizzo': 'Stephansplatz 3, 1010 Wien'
+        },
+        audioIntro: "Benvenuto alla Cattedrale di Santo Stefano, il simbolo più famoso di Vienna. Per oltre 850 anni, questa magnifica cattedrale ha dominato il centro storico della città, testimone di eventi storici cruciali e cuore spirituale dell'Austria.",
+        sections: {
+          storia: {
+            title: 'Storia',
+            audio: "La cattedrale fu fondata nel 1137 come chiesa romanica. Nel corso dei secoli fu ampliata e ricostruita in stile gotico, diventando sede arcivescovile nel 1469.",
+            content: `
+              <h3>Le Origini (1137-1160)</h3>
+              <p>La Cattedrale di Santo Stefano fu fondata nel 1137 durante il regno del Margravio Leopoldo IV di Babenberg. La struttura originale era una basilica romanica, di cui oggi rimangono ancora le Porte dei Giganti (Riesentor) e le Torri dei Pagani (Heidentürme).</p>
+              
+              <div class="timeline">
+                <div class="timeline-item">
+                  <div class="timeline-date">1137</div>
+                  <div class="timeline-content">Fondazione della prima chiesa romanica da parte del Margravio Leopoldo IV</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-date">1230</div>
+                  <div class="timeline-content">Primo ampliamento della cattedrale</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-date">1304-1340</div>
+                  <div class="timeline-content">Costruzione del coro gotico sotto Alberto I d'Asburgo</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-date">1359-1433</div>
+                  <div class="timeline-content">Costruzione della navata gotica e inizio della torre sud</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-date">1469</div>
+                  <div class="timeline-content">Elevazione a cattedrale arcivescovile</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-date">1945</div>
+                  <div class="timeline-content">Gravi danni durante la Seconda Guerra Mondiale</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-date">1945-1952</div>
+                  <div class="timeline-content">Ricostruzione completa</div>
+                </div>
+              </div>
+              
+              <div class="guide-gallery">
+                <img src="https://images.unsplash.com/photo-1566139447295-8c4df4b28707?w=400" alt="Porta dei Giganti romanica">
+                <img src="https://images.unsplash.com/photo-1517339382936-8e762c0faa97?w=400" alt="Interno gotico">
+                <img src="https://images.unsplash.com/photo-1544320824-8db57da2fa97?w=400" alt="Ricostruzione post-guerra">
+              </div>
+            `
+          },
+          architettura: {
+            title: 'Architettura',
+            audio: "L'architettura della cattedrale rappresenta un perfetto esempio della transizione dal romanico al gotico. La torre sud, alta 136 metri, è considerata un capolavoro del gotico austriaco.",
+            content: `
+              <h3>Un Capolavoro Architettonico</h3>
+              <p>La Cattedrale di Santo Stefano rappresenta una straordinaria sintesi di stili architettonici, dal romanico al gotico, testimoniando l'evoluzione artistica di Vienna attraverso i secoli.</p>
+              
+              <div class="architecture-details">
+                <div class="architecture-item">
+                  <h4>🏗️ Struttura Romanica (XII sec.)</h4>
+                  <p><strong>Porta dei Giganti:</strong> L'ingresso principale occidentale, con i suoi archi a tutto sesto e le sculture raffiguranti Cristo in maestà.</p>
+                  <p><strong>Torri dei Pagani:</strong> Le due torri occidentali, chiamate così perché costruite con pietre di edifici romani.</p>
+                </div>
+                
+                <div class="architecture-item">
+                  <h4>⛪ Elementi Gotici (XIV-XV sec.)</h4>
+                  <p><strong>Navata:</strong> Tre navate con volte a crociera costolonate, tipiche del gotico austriaco.</p>
+                  <p><strong>Coro:</strong> Costruito tra il 1304 e il 1340, è uno dei primi esempi di gotico viennese.</p>
+                </div>
+                
+                <div class="architecture-item">
+                  <h4>🗼 Torre Sud "Steffl"</h4>
+                  <p><strong>Altezza:</strong> 136,4 metri, rendendola la torre campanaria più alta dell'Austria.</p>
+                  <p><strong>Struttura:</strong> 343 gradini conducono alla camera di guardia a 72 metri di altezza.</p>
+                </div>
+                
+                <div class="architecture-item">
+                  <h4>🔔 Torre Nord Incompiuta</h4>
+                  <p><strong>Storia:</strong> Iniziata nel 1450, rimase incompiuta a causa di problemi strutturali.</p>
+                  <p><strong>Funzione attuale:</strong> Ospita la "Pummerin", la seconda campana più grande d'Europa.</p>
+                </div>
+              </div>
+              
+              <div class="guide-gallery">
+                <img src="https://images.unsplash.com/photo-1583225173839-59b4e437f4d4?w=400" alt="Torre Sud Steffl">
+                <img src="https://images.unsplash.com/photo-1580836507615-96f7f950e3b?w=400" alt="Volte gotiche">
+                <img src="https://images.unsplash.com/photo-1541367777708-c1ccbfb0e6d5?w=400" alt="Dettagli architettonici">
+              </div>
+            `
+          },
+          interno: {
+            title: 'Interno e Tesori',
+            audio: "All'interno della cattedrale si trovano capolavori artistici di inestimabile valore, tra cui l'altare di Wiener Neustadt, il pulpito gotico e la tomba dell'imperatore Federico III.",
+            content: `
+              <h3>Capolavori Artistici e Spirituali</h3>
+              <p>L'interno della cattedrale custodisce tesori artistici che spaziano dal medioevo al barocco, testimoniando secoli di devozione e mecenatismo.</p>
+              
+              <h4>🎨 Principali Opere d'Arte</h4>
+              <p><strong>Altare di Wiener Neustadt (1447):</strong> Capolavoro del gotico tardivo, raffigura la Passione di Cristo in 72 scene scolpite.</p>
+              
+              <p><strong>Pulpito di Anton Pilgram (1515):</strong> Straordinario esempio di scultura gotica tardiva, decorato con i quattro Padri della Chiesa e un celebre autoritratto dello scultore.</p>
+              
+              <p><strong>Tomba dell'Imperatore Federico III:</strong> Realizzata in marmo rosso di Salisburgo, è considerata uno dei monumenti funebri più belli del gotico austriaco.</p>
+              
+              <h4>🖼️ Vetrate e Decorazioni</h4>
+              <p>Le vetrate gotiche originali, alcune risalenti al XIV secolo, creano un'atmosfera mistica all'interno della cattedrale. Particolarmente notevoli sono le vetrate del coro, che raffigurano scene della vita di Cristo.</p>
+              
+              <h4>⛪ Cappelle Laterali</h4>
+              <p><strong>Cappella di Santa Caterina:</strong> Ospita il miracoloso Crocifisso di Wiener Neustadt.</p>
+              <p><strong>Cappella di San Eligio:</strong> Dedicata al patrono degli orefici, conserva preziosi ex-voto.</p>
+              
+              <div class="guide-gallery">
+                <img src="https://images.unsplash.com/photo-1613414969929-491c9c779910?w=400" alt="Altare maggiore">
+                <img src="https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=400" alt="Pulpito gotico">
+                <img src="https://images.unsplash.com/photo-1583037189850-1921ae7c6c22?w=400" alt="Vetrate colorate">
+              </div>
+            `
+          },
+          catacombe: {
+            title: 'Catacombe',
+            audio: "Sotto la cattedrale si estendono le antiche catacombe, che custodiscono i resti di migliaia di viennesi, compresi membri della famiglia imperiale asburgica.",
+            content: `
+              <h3>Il Regno dei Morti sotto Vienna</h3>
+              <p>Le catacombe di Santo Stefano rappresentano uno dei siti storici più affascinanti e misteriosi di Vienna, estendendosi per circa 30 metri sotto la cattedrale.</p>
+              
+              <h4>💀 Storia delle Catacombe</h4>
+              <p>Le catacombe furono scavate nel XVIII secolo quando l'imperatore Giuseppe II vietò le sepolture all'interno del centro città per motivi igienici. I resti di circa 11.000 persone furono trasferiti qui dai cimiteri parrocchiali.</p>
+              
+              <h4>👑 La Cripta Ducale</h4>
+              <p>Nella parte più antica delle catacombe si trova la Cripta Ducale, che custodisce:</p>
+              <ul style="margin-left: 20px; line-height: 1.8;">
+                <li><strong>Organi interni degli Asburgo:</strong> Urne contenenti cuori e altri organi dei membri della famiglia imperiale</li>
+                <li><strong>Sarcofago di Rodolfo IV:</strong> Il fondatore dell'Università di Vienna, morto nel 1365</li>
+                <li><strong>Vescovi e arcivescovi:</strong> Sepolture di importanti figure ecclesiastiche</li>
+              </ul>
+              
+              <h4>🏛️ Architettura Sotterranea</h4>
+              <p>Le catacombe sono organizzate in diverse camere:</p>
+              <p><strong>Camera principale:</strong> Ospita file ordinate di teschi e ossa disposte artisticamente</p>
+              <p><strong>Corridoi laterali:</strong> Collegano le diverse sezioni e ospitano sepolture più antiche</p>
+              <p><strong>Cripta moderna:</strong> Utilizzata fino agli anni '60 per sepolture di personalità illustri</p>
+              
+              <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <strong>📝 Informazioni per la Visita:</strong><br>
+                • Visite guidate ogni 30 minuti<br>
+                • Temperatura costante di 8°C<br>
+                • Vietato fotografare<br>
+                • Durata: circa 30 minuti<br>
+                • Non adatto a claustrofobici
+              </div>
+            `
+          },
+          curiosita: {
+            title: 'Curiosità e Leggende',
+            audio: "La cattedrale è circondata da numerose leggende e curiosità: dal mistero del maestro costruttore che si gettò dalla torre, al patto con il diavolo per completare l'opera.",
+            content: `
+              <h3>Misteri e Leggende di Santo Stefano</h3>
+              <p>Secoli di storia hanno avvolto la cattedrale in un alone di mistero, generando leggende che ancora oggi affascinano visitatori e viennesi.</p>
+              
+              <h4>👹 La Leggenda del Diavolo</h4>
+              <p>Si narra che il maestro costruttore Hans Puchsbaum, disperato per completare la cattedrale, fece un patto con il diavolo. In cambio dell'aiuto nella costruzione, promise che la prima parola pronunciata nella cattedrale completata non sarebbe stata di preghiera. Quando il diavolo si presentò per riscuotere il debito, sentì pronunciare il nome "Maria" e, furioso, tentò di distruggere l'edificio scagliandosi contro un pilastro, dove ancora oggi si può vedere un'impronta che i viennesi chiamano "l'impronta del diavolo".</p>
+              
+              <h4>🔍 I Numeri Nascosti</h4>
+              <p><strong>Il numero 137:</strong> Ricorre misteriosamente in tutta la cattedrale - l'anno di fondazione, il numero di gradini per raggiungere certe sezioni, e altre misure architettoniche.</p>
+              
+              <p><strong>Simboli massonici:</strong> Alcuni studiosi sostengono di aver individuato simboli massonici nascosti nella decorazione, testimonianza dell'influenza di questa società segreta nella Vienna del XVIII secolo.</p>
+              
+              <h4>🎵 La Campana Pummerin</h4>
+              <p>La famosa campana "Pummerin" nella torre nord ha una storia drammatica: la campana originale del 1711 fu fusa utilizzando 200 cannoni turchi catturati durante l'assedio di Vienna del 1683. Distrutta nell'incendio del 1945, fu ricostruita nel 1952 utilizzando i frammenti recuperati.</p>
+              
+              <h4>🦅 L'Aquila Bicefala</h4>
+              <p>Sul tetto della cattedrale, 230.000 tegole smaltate formano l'aquila bicefala asburgica e lo stemma dell'Austria. Questo mosaico di tegole, ricostruito dopo la guerra, è visibile solo dall'alto e rappresenta un capolavoro di artigianato.</p>
+              
+              <h4>🌟 Curiosità Moderne</h4>
+              <ul style="margin-left: 20px; line-height: 1.8;">
+                <li><strong>Punto Zero:</strong> Una placca di bronzo segna il "punto zero" da cui si misurano tutte le distanze in Austria</li>
+                <li><strong>Rifugio antiaereo:</strong> Durante la Seconda Guerra Mondiale, le catacombe furono utilizzate come rifugio antiaereo</li>
+                <li><strong>Concerto di Mozart:</strong> Mozart si sposò qui nel 1782 e compose la sua "Messa dell'Incoronazione" per la cattedrale</li>
+                <li><strong>Webcam storica:</strong> Una delle prime webcam al mondo fu installata qui nel 1996</li>
+              </ul>
+              
+              <div class="guide-gallery">
+                <img src="https://images.unsplash.com/photo-1548802673-5abd0ff47c09?w=400" alt="Tetto con aquila asburgica">
+                <img src="https://images.unsplash.com/photo-1583225173839-59b4e437f4d4?w=400" alt="Campana Pummerin">
+                <img src="https://images.unsplash.com/photo-1609856878074-cf31e21ccb6b?w=400" alt="Vista notturna">
+              </div>
+            `
+          }
+        }
+      },
+      
+      schonbrunn: {
+        id: 'schonbrunn',
+        title: 'Palazzo di Schönbrunn',
+        subtitle: 'La Versailles austriaca e residenza estiva degli Asburgo',
+        mainImage: 'https://images.unsplash.com/photo-1516550893923-42d28e5677af?w=800',
+        quickFacts: {
+          'Costruzione': '1696-1713',
+          'Architetto': 'Johann Bernhard Fischer von Erlach',
+          'Stanze': '1.441',
+          'Patrimonio UNESCO': 'Dal 1996',
+          'Giardini': '120 ettari',
+          'Visitatori annui': '3,8 milioni',
+          'Indirizzo': 'Schönbrunner Schloßstraße 47, 1130 Wien'
+        },
+        audioIntro: "Benvenuto al Palazzo di Schönbrunn, la magnifica residenza estiva degli imperatori asburgici. Questo gioiello del barocco austriaco, con i suoi 1.441 appartamenti e gli splendidi giardini, racconta tre secoli di storia imperiale.",
+        sections: {
+          storia: {
+            title: 'Storia Imperiale',
+            audio: "Schönbrunn fu costruito su volere dell'imperatore Leopoldo I come residenza estiva. Il palazzo raggiunse il suo massimo splendore durante il regno di Maria Teresa nel XVIII secolo.",
+            content: `
+              <h3>Dalle Origini al Palazzo Imperiale</h3>
+              <p>La storia di Schönbrunn inizia nel XIV secolo come tenuta di caccia, ma il palazzo che vediamo oggi nacque dalla visione degli Asburgo di creare una residenza che rivaleggiasse con Versailles.</p>
+              
+              <div class="timeline">
+                <div class="timeline-item">
+                  <div class="timeline-date">1569</div>
+                  <div class="timeline-content">Massimiliano II acquista la tenuta e costruisce un castello di caccia</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-date">1683</div>
+                  <div class="timeline-content">Il castello originale viene distrutto durante l'assedio turco</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-date">1696</div>
+                  <div class="timeline-content">Leopoldo I commissiona il nuovo palazzo a Fischer von Erlach</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-date">1743-1763</div>
+                  <div class="timeline-content">Maria Teresa trasforma Schönbrunn nella residenza principale</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-date">1805-1809</div>
+                  <div class="timeline-content">Napoleone usa il palazzo come quartier generale</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-date">1918</div>
+                  <div class="timeline-content">Fine dell'impero: il palazzo diventa proprietà della Repubblica</div>
+                </div>
+              </div>
+            `
+          },
+          stanze: {
+            title: 'Stanze Imperiali',
+            audio: "Le 45 stanze aperte al pubblico mostrano la vita di corte asburgica. Dalla Sala degli Specchi dove Mozart suonò bambino, agli appartamenti privati di Francesco Giuseppe e Sissi.",
+            content: `
+              <h3>Un Viaggio tra Fasto e Intimità Imperiale</h3>
+              <p>Le stanze di Schönbrunn offrono uno spaccato unico della vita degli Asburgo, dai grandi ricevimenti di stato ai momenti più intimi della famiglia imperiale.</p>
+              
+              <h4>👑 Appartamenti di Rappresentanza</h4>
+              <p><strong>Sala degli Specchi:</strong> Qui il piccolo Mozart, a soli 6 anni, suonò per l'imperatrice Maria Teresa nel 1762, iniziando la sua carriera di enfant prodige.</p>
+              
+              <p><strong>Grande Galleria:</strong> Lunga 43 metri, fu teatro di balli imperiali e ricevimenti diplomatici. Le sue pareti dorate e gli specchi riflettevano la potenza asburgica.</p>
+              
+              <p><strong>Salon Cinese Azzurro:</strong> Maria Teresa teneva qui le sue riunioni di stato segrete, seduta a un tavolino rotondo per eliminare le precedenze diplomatiche.</p>
+              
+              <h4>🏡 Appartamenti Privati</h4>
+              <p><strong>Camera da letto di Francesco Giuseppe:</strong> L'ultimo imperatore dormiva su un letto militare spartano, riflettendo la sua natura austera.</p>
+              
+              <p><strong>Appartamenti di Sissi:</strong> Gli appartamenti dell'imperatrice Elisabetta mostrano il suo amore per la ginnastica e la bellezza, con una palestra privata.</p>
+              
+              <div class="guide-gallery">
+                <img src="https://images.unsplash.com/photo-1566139447295-8c4df4b28707?w=400" alt="Sala degli Specchi">
+                <img src="https://images.unsplash.com/photo-1" class="tip">Nessun POI davanti a te al momento.</div>
       </div>
     </div>
   </div>
@@ -189,6 +544,16 @@
       <span class="close">&times;</span>
       <h2 id="modalTitle">Navigazione</h2>
       <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Modal galleria immagini -->
+  <div id="imageModal" class="image-modal">
+    <span class="image-modal-close">&times;</span>
+    <button class="image-modal-nav image-modal-prev">❮</button>
+    <button class="image-modal-nav image-modal-next">❯</button>
+    <div class="image-modal-content">
+      <img id="modalImage" src="" alt="">
     </div>
   </div>
 
@@ -256,9 +621,236 @@
       attractions: [] // dinamico da OSM
     };
 
+              <div class="guide-gallery">
+                <img src="https://images.unsplash.com/photo-1566139447295-8c4df4b28707?w=400" alt="Sala degli Specchi">
+                <img src="https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=400" alt="Grande Galleria">
+                <img src="https://images.unsplash.com/photo-1583037189850-1921ae7c6c22?w=400" alt="Salon Cinese">
+              </div>
+            `
+          },
+          giardini: {
+            title: 'Giardini e Parco',
+            audio: "I giardini di Schönbrunn si estendono per 120 ettari, combinando giardino formale francese con elementi inglesi. La Gloriette offre una vista panoramica su Vienna.",
+            content: `
+              <h3>Un Capolavoro di Arte Paesaggistica</h3>
+              <p>I giardini di Schönbrunn rappresentano uno dei più bei esempi di giardino barocco in Europa, dove natura e architettura si fondono in perfetta armonia.</p>
+              
+              <h4>Giardino Parterre</h4>
+              <p>Il giardino formale davanti al palazzo segue lo stile francese di André Le Nôtre. Le aiuole geometriche cambiano colore secondo le stagioni, creando un tappeto vivente di fiori che si estende verso la Gloriette.</p>
+              
+              <h4>La Gloriette</h4>
+              <p>Costruita nel 1775, questa struttura neoclassica corona la collina di Schönbrunn. Alta 25 metri, offre una vista spettacolare su Vienna e commemora la battaglia di Kolín del 1757.</p>
+              
+              <h4>Giardino del Principe Ereditario</h4>
+              <p>Un giardino privato in stile inglese, più intimo e naturale, dove la famiglia imperiale si rilassava lontano dall'etichetta di corte.</p>
+              
+              <h4>Fontana di Nettuno</h4>
+              <p>Al centro del giardino, questa imponente fontana barocca raffigura Nettuno che domina i mari, simbolo del potere asburgico che si estendeva "dai monti al mare".</p>
+              
+              <div class="guide-gallery">
+                <img src="https://images.unsplash.com/photo-1589207821092-9ce3f6132eb9?w=400" alt="Giardini formali">
+                <img src="https://images.unsplash.com/photo-1590682244746-d7b27e6a5c9b?w=400" alt="Gloriette">
+                <img src="https://images.unsplash.com/photo-1559128019-7c1dd7c9eefd?w=400" alt="Fontana di Nettuno">
+              </div>
+            `
+          }
+        }
+      }
+    };
+
     /* =======================
-       Guida Live - dataset (esempio)
+       Logica Guida Interattiva
     ======================= */
+    let currentGuideData = null;
+    let currentSection = null;
+    let speechUtterance = null;
+
+    function showInteractiveGuide() {
+      document.getElementById('placesGrid').style.display = 'none';
+      document.getElementById('interactiveGuide').classList.add('active');
+      
+      // Mostra lista di monumenti disponibili
+      const grid = document.getElementById('placesGrid');
+      grid.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+          <div class="place-card" onclick="loadGuideContent('stephansdom')" style="cursor: pointer;">
+            <img src="https://images.unsplash.com/photo-1609856878074-cf31e21ccb6b?w=400" alt="Cattedrale Santo Stefano" class="place-image">
+            <div class="place-info">
+              <div class="place-name">Cattedrale di Santo Stefano</div>
+              <div class="place-description">Guida completa al simbolo di Vienna con audio e contenuti dettagliati</div>
+              <button class="navigate-btn">Inizia la guida interattiva</button>
+            </div>
+          </div>
+          <div class="place-card" onclick="loadGuideContent('schonbrunn')" style="cursor: pointer;">
+            <img src="https://images.unsplash.com/photo-1516550893923-42d28e5677af?w=400" alt="Palazzo Schönbrunn" class="place-image">
+            <div class="place-info">
+              <div class="place-name">Palazzo di Schönbrunn</div>
+              <div class="place-description">Esplora la residenza imperiale con visite guidate audio</div>
+              <button class="navigate-btn">Inizia la guida interattiva</button>
+            </div>
+          </div>
+        </div>
+      `;
+      grid.style.display = 'block';
+      document.getElementById('interactiveGuide').style.display = 'none';
+    }
+
+    function showMainGuide() {
+      document.getElementById('interactiveGuide').classList.remove('active');
+      document.getElementById('interactiveGuide').style.display = 'none';
+      document.getElementById('placesGrid').style.display = 'grid';
+      stopAudio();
+    }
+
+    function loadGuideContent(guideId) {
+      currentGuideData = interactiveGuides[guideId];
+      if (!currentGuideData) return;
+      
+      document.getElementById('placesGrid').style.display = 'none';
+      document.getElementById('interactiveGuide').style.display = 'block';
+      document.getElementById('interactiveGuide').classList.add('active');
+      
+      // Popola header
+      document.getElementById('guideMainImage').src = currentGuideData.mainImage;
+      document.getElementById('guideMainTitle').textContent = currentGuideData.title;
+      document.getElementById('guideMainSubtitle').textContent = currentGuideData.subtitle;
+      
+      // Popola fatti rapidi
+      const quickFacts = document.getElementById('guideQuickFacts');
+      let factsHTML = '<h4>Informazioni Rapide</h4>';
+      Object.entries(currentGuideData.quickFacts).forEach(([key, value]) => {
+        factsHTML += `<div class="fact"><span><strong>${key}:</strong></span><span>${value}</span></div>`;
+      });
+      quickFacts.innerHTML = factsHTML;
+      
+      // Crea navigazione
+      const navigation = document.getElementById('guideNavigation');
+      navigation.innerHTML = Object.entries(currentGuideData.sections).map(([key, section]) => 
+        `<button class="guide-nav-btn" onclick="showGuideSection('${key}')">${section.title}</button>`
+      ).join('');
+      
+      // Mostra prima sezione
+      const firstSection = Object.keys(currentGuideData.sections)[0];
+      showGuideSection(firstSection);
+    }
+
+    function showGuideSection(sectionKey) {
+      if (!currentGuideData) return;
+      
+      currentSection = sectionKey;
+      const sectionData = currentGuideData.sections[sectionKey];
+      
+      // Aggiorna navigazione
+      document.querySelectorAll('.guide-nav-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      // Mostra contenuto
+      document.getElementById('guideContent').innerHTML = sectionData.content;
+      
+      // Aggiorna audio
+      setupAudioButtons(sectionData.audio);
+    }
+
+    function setupAudioButtons(sectionAudio) {
+      const playIntroBtn = document.getElementById('playIntroBtn');
+      const playCurrentBtn = document.getElementById('playCurrentBtn');
+      const stopAudioBtn = document.getElementById('stopAudioBtn');
+      
+      playIntroBtn.onclick = () => playAudio(currentGuideData.audioIntro);
+      playCurrentBtn.onclick = () => playAudio(sectionAudio);
+      stopAudioBtn.onclick = stopAudio;
+    }
+
+    function playAudio(text) {
+      if (!text) return;
+      
+      stopAudio();
+      
+      if ('speechSynthesis' in window) {
+        speechUtterance = new SpeechSynthesisUtterance(text);
+        speechUtterance.lang = 'it-IT';
+        speechUtterance.rate = 0.9;
+        speechUtterance.pitch = 1.0;
+        speechUtterance.volume = 1.0;
+        
+        speechUtterance.onstart = () => {
+          document.querySelectorAll('.guide-audio-btn').forEach(btn => btn.classList.remove('playing'));
+          event.target.classList.add('playing');
+        };
+        
+        speechUtterance.onend = () => {
+          document.querySelectorAll('.guide-audio-btn').forEach(btn => btn.classList.remove('playing'));
+        };
+        
+        window.speechSynthesis.speak(speechUtterance);
+      } else {
+        alert('Audio non supportato in questo browser');
+      }
+    }
+
+    function stopAudio() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      document.querySelectorAll('.guide-audio-btn').forEach(btn => btn.classList.remove('playing'));
+    }
+
+    /* =======================
+       Galleria Immagini
+    ======================= */
+    let currentImageIndex = 0;
+    let currentImages = [];
+
+    function openImageModal(imgElement) {
+      const modal = document.getElementById('imageModal');
+      const modalImg = document.getElementById('modalImage');
+      
+      // Trova tutte le immagini nella galleria corrente
+      const gallery = imgElement.closest('.guide-gallery');
+      if (gallery) {
+        currentImages = Array.from(gallery.querySelectorAll('img'));
+        currentImageIndex = currentImages.indexOf(imgElement);
+      } else {
+        currentImages = [imgElement];
+        currentImageIndex = 0;
+      }
+      
+      modalImg.src = imgElement.src;
+      modalImg.alt = imgElement.alt;
+      modal.style.display = 'block';
+      
+      // Aggiorna visibilità pulsanti navigazione
+      const prevBtn = document.querySelector('.image-modal-prev');
+      const nextBtn = document.querySelector('.image-modal-next');
+      prevBtn.style.display = currentImages.length > 1 ? 'block' : 'none';
+      nextBtn.style.display = currentImages.length > 1 ? 'block' : 'none';
+    }
+
+    function closeImageModal() {
+      document.getElementById('imageModal').style.display = 'none';
+    }
+
+    function navigateImage(direction) {
+      if (currentImages.length <= 1) return;
+      
+      currentImageIndex += direction;
+      if (currentImageIndex < 0) currentImageIndex = currentImages.length - 1;
+      if (currentImageIndex >= currentImages.length) currentImageIndex = 0;
+      
+      const modalImg = document.getElementById('modalImage');
+      modalImg.src = currentImages[currentImageIndex].src;
+      modalImg.alt = currentImages[currentImageIndex].alt;
+    }
+
+    // Funzione per aggiungere click handler alle immagini delle gallerie
+    function setupImageGalleries() {
+      document.addEventListener('click', (e) => {
+        if (e.target.matches('.guide-gallery img')) {
+          e.preventDefault();
+          openImageModal(e.target);
+        }
+      });
+    }
     const liveGuides = [
       {
         id: 'stephansdom',
@@ -966,6 +1558,43 @@
       // Guida Live - setup
       enableCompass();                   // setup bussola (richiede permesso iOS al toggle)
       setInterval(liveGuideTick, 1500);  // controllo periodico (funziona solo se abilitata)
+      
+      // Setup gallerie immagini
+      setupImageGalleries();
+      
+      // Eventi per modal galleria
+      const imageModal = document.getElementById('imageModal');
+      const imageModalClose = document.querySelector('.image-modal-close');
+      const prevBtn = document.querySelector('.image-modal-prev');
+      const nextBtn = document.querySelector('.image-modal-next');
+      
+      if(imageModalClose) {
+        imageModalClose.addEventListener('click', closeImageModal);
+      }
+      
+      if(prevBtn) {
+        prevBtn.addEventListener('click', () => navigateImage(-1));
+      }
+      
+      if(nextBtn) {
+        nextBtn.addEventListener('click', () => navigateImage(1));
+      }
+      
+      // Chiudi modal con click fuori dall'immagine
+      if(imageModal) {
+        imageModal.addEventListener('click', (e) => {
+          if (e.target === imageModal) closeImageModal();
+        });
+      }
+      
+      // Navigazione con tastiera
+      document.addEventListener('keydown', (e) => {
+        if (imageModal && imageModal.style.display === 'block') {
+          if (e.key === 'Escape') closeImageModal();
+          if (e.key === 'ArrowLeft') navigateImage(-1);
+          if (e.key === 'ArrowRight') navigateImage(1);
+        }
+      });
     });
 
     // Gestione resize e cleanup
