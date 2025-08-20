@@ -1,389 +1,1087 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Vienna Tourist Guide</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
-    .container{max-width:1400px;margin:0 auto;background:rgba(255,255,255,.95);border-radius:20px;padding:30px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-    h1{text-align:center;color:#764ba2;margin-bottom:30px;font-size:2.3em;text-shadow:2px 2px 4px rgba(0,0,0,.1)}
-    .map-container{height:500px;border-radius:15px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.2);margin-bottom:30px;position:relative}
-    #map{height:100%;width:100%}
-    .row{display:grid;grid-template-columns:2fr 1fr;gap:20px}
-    @media(max-width:1000px){.row{grid-template-columns:1fr}}
-    .section{background:#fff;border-radius:14px;padding:16px;box-shadow:0 8px 18px rgba(0,0,0,.08);margin-bottom:20px}
-    .section h3{margin-bottom:10px;color:#444}
-    .categories{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:20px}
-    .category-btn{padding:12px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:15px;font-weight:600;transition:.25s;box-shadow:0 5px 15px rgba(0,0,0,.15)}
-    .category-btn:hover{transform:translateY(-2px)}
-    .category-btn.active{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%)}
-    .places-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;margin-top:10px}
-    .place-card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,.1);transition:.25s}
-    .place-card:hover{transform:translateY(-4px)}
-    .place-image{width:100%;height:190px;object-fit:cover}
-    .place-info{padding:16px}
-    .place-name{font-size:1.15em;font-weight:700;color:#333;margin-bottom:8px}
-    .place-description{color:#666;line-height:1.55;margin-bottom:12px;font-size:.95em}
-    .detail{display:flex;align-items:center;gap:8px;color:#555;font-size:.9em;margin:6px 0}
-    .distance-badge{display:inline-block;padding:4px 9px;background:#4CAF50;color:#fff;border-radius:12px;font-size:.8em;font-weight:700}
-    .price-badge{display:inline-block;padding:4px 9px;background:#ff9800;color:#fff;border-radius:12px;font-size:.8em;font-weight:700}
-    .free-badge{background:#4CAF50}
-    .navigate-btn{width:100%;padding:10px;margin-top:12px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;transition:.25s}
-    .navigate-btn:hover{filter:brightness(1.05)}
-    .hotel-info{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:#fff;padding:16px;border-radius:14px;margin-bottom:20px;box-shadow:0 10px 25px rgba(0,0,0,.18)}
-    .search-bar{width:100%;padding:13px;border:2px solid #ddd;border-radius:10px;font-size:15px;margin-bottom:14px}
-    .filter-options{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-    .chip{padding:7px 12px;background:#f0f0f0;border-radius:20px;cursor:pointer;border:2px solid transparent}
-    .chip.active{background:#667eea;color:#fff;border-color:#764ba2}
-    .sort-options{display:flex;gap:10px;margin-bottom:14px;align-items:center}
-    .sort-btn{padding:7px 12px;background:#fff;border:2px solid #667eea;border-radius:20px;cursor:pointer;font-size:14px}
-    .sort-btn.active{background:#667eea;color:#fff}
-    .location-btn{position:absolute;top:10px;right:10px;z-index:1000;background:#fff;border:2px solid #667eea;border-radius:50%;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-    .location-status{padding:10px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border-radius:10px;margin:12px 0;display:none;align-items:center;gap:10px}
-    .location-status.active{display:flex}
-    .modal{display:none;position:fixed;z-index:1000;inset:0;background:rgba(0,0,0,.7)}
-    .modal-content{background:#fff;margin:5% auto;padding:24px;border-radius:18px;width:90%;max-width:600px;position:relative}
-    .close{position:absolute;right:16px;top:10px;font-size:28px;cursor:pointer;color:#999}
-    .tip{font-size:.9em;color:#666}
-    .airtag-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media(max-width:720px){.airtag-grid{grid-template-columns:1fr}}
-    .btn{padding:10px 12px;border:none;border-radius:10px;cursor:pointer;font-weight:700}
-    .btn-primary{background:#0b73ff;color:#fff}
-    .btn-outline{background:#fff;border:2px solid #0b73ff;color:#0b73ff}
-    .nav-option{padding:10px;margin:8px 0;background:#f8f9fa;border-radius:8px;cursor:pointer;transition:.2s}
-    .nav-option:hover{background:#e9ecef}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vienna Tour Guide - Guida Interattiva</title>
     
-    /* Guida Interattiva Styles */
-    .interactive-guide{display:none}
-    .interactive-guide.active{display:block}
-    .guide-header{display:flex;gap:20px;margin-bottom:30px;align-items:flex-start}
-    .guide-main-image{width:300px;height:200px;object-fit:cover;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.15)}
-    .guide-info{flex:1}
-    .guide-title{font-size:2em;font-weight:700;color:#333;margin-bottom:10px}
-    .guide-subtitle{color:#666;font-size:1.1em;margin-bottom:15px}
-    .guide-quick-facts{background:#f8f9fa;padding:15px;border-radius:8px;margin-bottom:20px}
-    .guide-quick-facts h4{margin-bottom:10px;color:#444}
-    .guide-quick-facts .fact{display:flex;justify-content:space-between;margin:5px 0;padding:5px 0;border-bottom:1px solid #eee}
-    .guide-quick-facts .fact:last-child{border-bottom:none}
-    .guide-navigation{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
-    .guide-nav-btn{padding:8px 16px;background:#fff;border:2px solid #667eea;border-radius:20px;cursor:pointer;transition:.3s}
-    .guide-nav-btn.active{background:#667eea;color:#fff}
-    .guide-content{background:#fff;border-radius:12px;padding:20px;box-shadow:0 4px 12px rgba(0,0,0,.1)}
-    .guide-section{display:none}
-    .guide-section.active{display:block}
-    .guide-section h3{color:#333;margin-bottom:15px;font-size:1.4em}
-    .guide-section p{line-height:1.7;margin-bottom:15px;color:#444}
-    .guide-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin:20px 0}
-    .guide-gallery img{width:100%;height:150px;object-fit:cover;border-radius:8px;cursor:pointer;transition:.3s}
-    .guide-gallery img:hover{transform:scale(1.05)}
-    .guide-audio-controls{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:15px;border-radius:10px;margin:15px 0;text-align:center}
-    .guide-audio-btn{background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);color:#fff;padding:10px 20px;border-radius:25px;cursor:pointer;margin:0 5px;transition:.3s}
-    .guide-audio-btn:hover{background:rgba(255,255,255,.3)}
-    .guide-audio-btn.playing{background:rgba(255,255,255,.4);animation:pulse 2s infinite}
-    .timeline{margin:20px 0;padding:20px;background:#f8f9fa;border-radius:10px}
-    .timeline-item{display:flex;gap:15px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #e0e0e0}
-    .timeline-item:last-child{border-bottom:none}
-    .timeline-date{font-weight:700;color:#667eea;min-width:80px}
-    .timeline-content{flex:1}
-    .architecture-details{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:20px 0}
-    .architecture-item{background:#fff;padding:15px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-    @media(max-width:768px){
-      .guide-header{flex-direction:column}
-      .guide-main-image{width:100%}
-      .architecture-details{grid-template-columns:1fr}
-    }
-    /* Modal per galleria immagini */
-    .image-modal{display:none;position:fixed;z-index:2000;inset:0;background:rgba(0,0,0,.9)}
-    .image-modal-content{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:90%;max-height:90%;border-radius:10px;overflow:hidden}
-    .image-modal img{width:100%;height:100%;object-fit:contain}
-    .image-modal-close{position:absolute;top:20px;right:30px;color:#fff;font-size:40px;cursor:pointer;z-index:2001}
-    .image-modal-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.3);color:#fff;border:none;font-size:30px;padding:10px 15px;cursor:pointer;border-radius:5px}
-    .image-modal-prev{left:20px}
-    .image-modal-next{right:20px}
-    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(102,126,234,.7)}70%{box-shadow:0 0 0 10px rgba(102,126,234,0)}100%{box-shadow:0 0 0 0 rgba(102,126,234,0)}}
-  </style>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            max-width: 100vw;
+            min-height: 100vh;
+            background: #fff;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .header-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.1rem;
+        }
+
+        .header-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Map Container */
+        #map {
+            height: calc(100vh - 280px);
+            width: 100%;
+            margin-top: 70px;
+            position: relative;
+        }
+
+        /* Location Info Panel */
+        .location-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            z-index: 999;
+            max-height: 40vh;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .location-panel.active {
+            transform: translateY(0);
+        }
+
+        .location-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .location-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .location-type {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .location-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .location-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        /* Audio Controls */
+        .audio-controls {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .audio-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-size: 1.2rem;
+        }
+
+        .audio-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .audio-btn.pause {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+        }
+
+        .audio-progress {
+            flex: 1;
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .audio-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .audio-time {
+            font-size: 0.9rem;
+            color: #666;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        /* Navigation Buttons */
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-btn.hotel {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 220px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            z-index: 998;
+            transition: all 0.3s;
+        }
+
+        .fab:hover {
+            transform: scale(1.1) rotate(15deg);
+        }
+
+        /* POI List */
+        .poi-list {
+            position: fixed;
+            top: 70px;
+            left: -300px;
+            width: 300px;
+            height: calc(100vh - 70px);
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 997;
+            transition: left 0.3s;
+            overflow-y: auto;
+        }
+
+        .poi-list.active {
+            left: 0;
+        }
+
+        .poi-list-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .poi-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .poi-item:hover {
+            background: #f8f8f8;
+        }
+
+        .poi-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .poi-info {
+            flex: 1;
+        }
+
+        .poi-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+        }
+
+        .poi-distance {
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            
+            .location-panel {
+                max-height: 50vh;
+            }
+            
+            .poi-list {
+                width: 100%;
+                left: -100%;
+            }
+        }
+
+        /* Custom Marker Styles */
+        .custom-marker {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50% 50% 50% 0;
+            border: 2px solid white;
+            width: 30px;
+            height: 30px;
+            position: relative;
+            transform: rotate(-45deg);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+
+        .marker-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+            color: white;
+            font-size: 14px;
+        }
+
+        /* Pulse Animation for Current Location */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 20px rgba(102, 126, 234, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
+            }
+        }
+
+        .current-location-marker {
+            animation: pulse 2s infinite;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🏛️ Vienna Tourist Guide 🇦🇹</h1>
-
-    <div class="hotel-info">
-      <h2>📍 Il Tuo Hotel</h2>
-      <p><strong>Boutique Hotel Das Tigra</strong></p>
-      <p>Tiefer Graben 14-20, 1010 Wien</p>
-      <p>⭐⭐⭐⭐ Hotel boutique nel centro storico di Vienna</p>
-    </div>
-
-    <div class="map-container">
-      <div id="map"></div>
-      <button class="location-btn" id="locationBtn" title="La mia posizione">📍</button>
-    </div>
-
-    <div class="row">
-      <!-- Colonna sinistra -->
-      <div class="section">
-        <div class="location-status" id="locationStatus">
-          <span>📡 Geolocalizzazione attiva — posizione aggiornata in tempo reale</span>
-        </div>
-
-        <input type="text" class="search-bar" placeholder="🔍 Cerca monumenti, ristoranti, attrazioni..." id="searchBar">
-
-        <div class="sort-options">
-          <span style="font-weight:bold;">Ordina per:</span>
-          <button class="sort-btn active" data-sort="default">Default</button>
-          <button class="sort-btn" data-sort="distance">Distanza da me</button>
-          <button class="sort-btn" data-sort="name">Nome A-Z</button>
-        </div>
-
-        <div class="filter-options">
-          <div class="chip" data-filter="free">Gratuito</div>
-          <div class="chip" data-filter="paid">A pagamento</div>
-          <div class="chip" data-filter="walking">&lt; 500m a piedi</div>
-          <div class="chip" data-filter="transport">&gt; 500m trasporti</div>
-        </div>
-
-        <div class="categories" id="categoriesBar">
-          <button class="category-btn active" data-category="monuments">🏛️ Monumenti</button>
-          <button class="category-btn" data-category="museums">🎨 Musei</button>
-          <button class="category-btn" data-category="restaurants">🍽️ Ristoranti</button>
-          <button class="category-btn" data-category="fastfood">🍔 Fast Food</button>
-          <button class="category-btn" data-category="parks">🌳 Parchi</button>
-          <button class="category-btn" data-category="shopping">🛍️ Shopping</button>
-          <button class="category-btn" data-category="attractions" id="btnAttractions">✨ Attrazioni (OSM)</button>
-          <button class="category-btn" id="btnLoadAttractions">⤵️ Carica altre attrazioni</button>
-          <button class="category-btn" id="btnInteractiveGuide">🎧 Guida Interattiva</button>
-        </div>
-
-        <div class="places-grid" id="placesGrid"></div>
-        
-        <!-- Guida Interattiva -->
-        <div class="interactive-guide" id="interactiveGuide">
-          <button onclick="showMainGuide()" style="margin-bottom:20px;padding:10px 20px;background:#667eea;color:#fff;border:none;border-radius:8px;cursor:pointer;">← Torna alla lista</button>
-          
-          <div class="guide-header">
-            <img id="guideMainImage" class="guide-main-image" src="" alt="">
-            <div class="guide-info">
-              <h1 class="guide-title" id="guideMainTitle"></h1>
-              <p class="guide-subtitle" id="guideMainSubtitle"></p>
-              
-              <div class="guide-quick-facts" id="guideQuickFacts">
-                <h4>📋 Informazioni Rapide</h4>
-              </div>
-              
-              <div class="guide-audio-controls">
-                <div style="margin-bottom:10px;">🎧 Audio Guida</div>
-                <button class="guide-audio-btn" id="playIntroBtn">▶️ Introduzione</button>
-                <button class="guide-audio-btn" id="playCurrentBtn">🔊 Sezione Corrente</button>
-                <button class="guide-audio-btn" id="stopAudioBtn">⏹️ Stop</button>
-              </div>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                <i class="fas fa-map-marked-alt"></i>
+                Vienna Tour Guide
+            </h1>
+            <div class="header-controls">
+                <button class="header-btn" onclick="togglePOIList()">
+                    <i class="fas fa-list"></i>
+                </button>
+                <button class="header-btn" onclick="centerOnUser()">
+                    <i class="fas fa-crosshairs"></i>
+                </button>
             </div>
-          </div>
-          
-          <div class="guide-navigation" id="guideNavigation"></div>
-          
-          <div class="guide-content" id="guideContent"></div>
         </div>
-      </div>
 
-      <!-- Colonna destra: AirTag + Guida Live -->
-      <div>
-        <div class="section">
-          <h3>🎯 Pannello AirTag / Oggetto</h3>
-          <p class="tip">
-            Gli AirTag non espongono API web: questo pannello permette di <b>aprire Dov'è</b> su iOS
-            e di <b>navigare</b> verso coordinate note dell'oggetto (se le conosci).
-          </p>
+        <!-- Map -->
+        <div id="map"></div>
 
-          <div style="display:flex;gap:10px;margin:10px 0;">
-            <button class="btn btn-primary" id="btnOpenFindMy">Apri Dov'è (iOS)</button>
-            <button class="btn btn-outline" id="btnFindMyHelp">Cos'è questo?</button>
-          </div>
-
-          <hr style="margin:12px 0;">
-
-          <h4>📌 Coordinate note dell'oggetto (facoltative)</h4>
-          <div class="airtag-grid" style="margin-top:8px;">
-            <input id="tagName" class="search-bar" placeholder="Nome oggetto (es. Zaino, Valigia)">
-            <input id="tagLat"  class="search-bar" placeholder="Latitudine (es. 48.20849)">
-            <input id="tagLng"  class="search-bar" placeholder="Longitudine (es. 16.37312)">
-            <div style="display:flex;gap:10px;">
-              <button class="btn btn-primary" id="btnSaveTag">Salva</button>
-              <button class="btn" id="btnUseMyPos">Usa mia posizione</button>
+        <!-- POI List -->
+        <div class="poi-list" id="poiList">
+            <div class="poi-list-header">
+                <i class="fas fa-star"></i> Luoghi da Visitare
             </div>
-          </div>
-
-          <div style="display:flex;gap:10px;margin-top:10px;">
-            <button class="btn" id="btnOpenAppleMaps">Apri in Apple Maps</button>
-            <button class="btn" id="btnOpenGoogleMaps">Apri in Google Maps</button>
-          </div>
-
-          <p id="tagSavedInfo" class="tip" style="margin-top:8px;"></p>
+            <div id="poiListContent"></div>
         </div>
 
-        <div class="section" id="liveGuidePanel">
-          <h3>🗺️ Guida Live</h3>
-          <p class="tip">Spunta la casella per avviare la guida interattiva dei monumenti.</p>
-          <div style="display:flex;gap:8px;align-items:center;margin:8px 0;">
-            <label><input type="checkbox" id="guideEnable"> Attiva guida live</label>
-            <label><input type="checkbox" id="guideVoice" checked> Audio (voce)</label>
-          </div>
-
-          <div id="guideNow" style="display:none;">
-            <div style="display:flex;gap:12px;align-items:flex-start;">
-              <img id="guideImg" src="" alt="" style="width:96px;height:72px;object-fit:cover;border-radius:8px;">
-              <div>
-                <div style="font-weight:700;" id="guideTitle"></div>
-                <div id="guideBlurb" style="color:#555;margin-top:4px;"></div>
-                <div id="guideDistance" class="tip" style="margin-top:6px;"></div>
-              </div>
+        <!-- Location Panel -->
+        <div class="location-panel" id="locationPanel">
+            <div class="location-header">
+                <h2 class="location-title" id="locationTitle">Seleziona un luogo</h2>
+                <span class="location-type" id="locationType">Info</span>
+            </div>
+            
+            <img class="location-image" id="locationImage" src="" alt="Location" style="display: none;">
+            
+            <div class="location-description" id="locationDescription">
+                Esplora i meravigliosi luoghi di Vienna con la nostra guida interattiva.
             </div>
 
-            <div id="guideSections" style="margin-top:10px;"></div>
-
-            <div style="display:flex;gap:8px;margin-top:10px;">
-              <button class="btn btn-primary" id="guideRepeat">🔊 Riascolta</button>
-              <button class="btn" id="guideNavigate">📍 Vai qui</button>
+            <div class="audio-controls">
+                <button class="audio-btn" id="playBtn" onclick="toggleAudio()">
+                    <i class="fas fa-play"></i>
+                </button>
+                <div class="audio-progress">
+                    <div class="audio-progress-bar" id="progressBar"></div>
+                </div>
+                <div class="audio-time" id="audioTime">0:00 / 0:00</div>
             </div>
 
-            <div style="margin-top:12px;">
-              <div style="height:8px;background:#eee;border-radius:6px;position:relative;">
-                <div id="arrowFov" style="position:absolute;top:-6px;left:50%;transform:translateX(-50%) rotate(0deg);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid #667eea;"></div>
-              </div>
-              <div class="tip">Freccia = direzione del POI rispetto a dove punti</div>
+            <div class="nav-buttons">
+                <button class="nav-btn" id="navigateBtn" onclick="navigateToLocation()">
+                    <i class="fas fa-route"></i>
+                    Naviga qui
+                </button>
+                <button class="nav-btn hotel" onclick="navigateToHotel()">
+                    <i class="fas fa-hotel"></i>
+                    Il mio Hotel
+                </button>
             </div>
-          </div>
-
-          <div id="guideNone" class="tip">Nessun POI davanti a te al momento.</div>
         </div>
-      </div>
+
+        <!-- Floating Action Button -->
+        <button class="fab" onclick="showNearbyPOIs()">
+            <i class="fas fa-map-pin"></i>
+        </button>
+
+        <!-- Loading Spinner -->
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+        </div>
     </div>
-  </div>
 
-  <!-- Modal navigazione -->
-  <div id="navigationModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2 id="modalTitle">Navigazione</h2>
-      <div id="modalBody"></div>
-    </div>
-  </div>
-
-  <!-- Modal galleria immagini -->
-  <div id="imageModal" class="image-modal">
-    <span class="image-modal-close">&times;</span>
-    <button class="image-modal-nav image-modal-prev">❮</button>
-    <button class="image-modal-nav image-modal-next">❯</button>
-    <div class="image-modal-content">
-      <img id="modalImage" src="" alt="">
-    </div>
-  </div>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    // [Il codice JavaScript completo va qui - è troppo lungo per includerlo tutto]
-    // Includerò solo la struttura principale e le correzioni chiave
-
-    /* =======================
-       Configurazione e dati base
-    ======================= */
-    let autoFollow = true;
-    let userCircle = null;
+    <!-- Leaflet JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     
-    const hotelLocation = {
-      lat: 48.216837,
-      lng: 16.345621,
-      name: "Boutique Hotel Das Tigra",
-      address: "Tiefer Graben 14-20, 1010 Wien"
-    };
+    <script>
+        // App State
+        let map;
+        let userMarker;
+        let currentLocation = null;
+        let selectedPOI = null;
+        let isPlaying = false;
+        let audioContext = null;
+        let speechSynthesis = window.speechSynthesis;
+        let currentUtterance = null;
 
-    const places = {
-      monuments: [
-        { name:"Palazzo di Schönbrunn", description:"Residenza imperiale barocca con 1.441 stanze, patrimonio UNESCO. Giardini magnifici e zoo.", image:"https://images.unsplash.com/photo-1516550893923-42d28e5677af?w=400", lat:48.184517, lng:16.312148, price:"€16", hours:"8:30-17:30", distance:0 },
-        { name:"Cattedrale di Santo Stefano", description:"Simbolo di Vienna, cattedrale gotica del XII secolo con torre alta 136 metri.", image:"https://images.unsplash.com/photo-1609856878074-cf31e21ccb6b?w=400", lat:48.208492, lng:16.373119, price:"Gratuito (Torre €6)", hours:"6:00-22:00", distance:0 },
-        { name:"Hofburg", description:"Complesso imperiale con musei, biblioteca nazionale e scuola di equitazione spagnola.", image:"https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=400", lat:48.206507, lng:16.365262, price:"€15", hours:"9:00-17:30", distance:0 },
-        { name:"Belvedere", description:"Complesso barocco con due palazzi e giardini. Ospita 'Il Bacio' di Klimt.", image:"https://images.unsplash.com/photo-1583225173839-59b4e437f4d4?w=400", lat:48.191567, lng:16.380995, price:"€16", hours:"10:00-18:00", distance:0 },
-        { name:"Prater e Ruota Panoramica", description:"Parco divertimenti storico con l'iconica ruota panoramica del 1897.", image:"https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=400", lat:48.216571, lng:16.395776, price:"€13.50", hours:"10:00-22:00", distance:0 },
-        { name:"Opera di Stato di Vienna", description:"Uno dei teatri d'opera più importanti al mondo, inaugurato nel 1869.", image:"https://images.unsplash.com/photo-1544320824-8db57da2fa97?w=400", lat:48.203001, lng:16.369002, price:"Tour €13", hours:"Tour: 10:00-15:00", distance:0 },
-        { name:"Palazzo del Parlamento", description:"Edificio neoclassico sede del Parlamento austriaco con statue greche.", image:"https://images.unsplash.com/photo-1548802673-5abd0ff47c09?w=400", lat:48.207788, lng:16.357613, price:"Tour gratuito", hours:"Lun-Sab con prenotazione", distance:0 },
-        { name:"Rathaus (Municipio)", description:"Imponente municipio neogotico con torre di 98 metri e piazza per eventi.", image:"https://images.unsplash.com/photo-1580836507615-96f7f950e3b?w=400", lat:48.210577, lng:16.357420, price:"Gratuito", hours:"Tour Lun, Mer, Ven 13:00", distance:0 }
-      ],
-      museums: [],
-      restaurants: [],
-      fastfood: [],
-      parks: [],
-      shopping: [],
-      attractions: []
-    };
+        // Hotel Information
+        const HOTEL = {
+            name: "Boutique Hotel Das Tigra",
+            address: "Tiefer Graben 14-20, 1010 Wien",
+            lat: 48.2115,
+            lng: 16.3680,
+            description: "Il tuo elegante hotel boutique nel cuore di Vienna"
+        };
 
-    const interactiveGuides = {
-      stephansdom: {
-        id: 'stephansdom',
-        title: 'Cattedrale di Santo Stefano (Stephansdom)',
-        subtitle: 'Il cuore spirituale e simbolo di Vienna',
-        mainImage: 'https://images.unsplash.com/photo-1609856878074-cf31e21ccb6b?w=800',
-        quickFacts: {
-          'Costruzione': '1137-1160 (parti più antiche)',
-          'Stile': 'Romanico e Gotico',
-          'Altezza torre': '136,4 metri',
-          'Lunghezza': '107 metri',
-          'Larghezza': '34 metri',
-          'Visitatori annui': '3 milioni',
-          'Indirizzo': 'Stephansplatz 3, 1010 Wien'
-        },
-        audioIntro: "Benvenuto alla Cattedrale di Santo Stefano.",
-        sections: {
-          storia: {
-            title: 'Storia',
-            audio: "La cattedrale fu fondata nel 1137.",
-            content: '<h3>Le Origini</h3><p>Storia dettagliata...</p>'
-          }
+        // Points of Interest
+        const POIs = [
+            {
+                id: 1,
+                name: "Schönbrunn Palace",
+                type: "Palazzo",
+                lat: 48.1845,
+                lng: 16.3122,
+                image: "https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=800",
+                description: "Il magnifico Palazzo di Schönbrunn è uno dei più importanti monumenti culturali dell'Austria. Antica residenza estiva imperiale degli Asburgo, con 1.441 stanze è uno dei più grandi complessi barocchi d'Europa. I suoi splendidi giardini, il labirinto, la Gloriette e lo zoo più antico del mondo lo rendono una destinazione imperdibile.",
+                audioText: "Benvenuti al Palazzo di Schönbrunn, la perla barocca di Vienna. Questo maestoso palazzo fu la residenza estiva della famiglia imperiale austriaca. Costruito nel diciassettesimo secolo, ospita magnifiche sale di rappresentanza, appartamenti imperiali e giardini mozzafiato che si estendono per chilometri."
+            },
+            {
+                id: 2,
+                name: "Cattedrale di Santo Stefano",
+                type: "Chiesa",
+                lat: 48.2084,
+                lng: 16.3731,
+                image: "https://images.unsplash.com/photo-1609856878074-cf31e21ccf-0?w=800",
+                description: "Il Duomo di Santo Stefano (Stephansdom) è il simbolo di Vienna. Questa maestosa cattedrale gotica, con il suo caratteristico tetto di tegole colorate e la torre sud alta 136 metri, domina il centro storico. All'interno si trovano preziose opere d'arte, le catacombe e la campana Pummerin.",
+                audioText: "La Cattedrale di Santo Stefano è il cuore spirituale di Vienna. La sua guglia meridionale, chiamata affettuosamente Steffl dai viennesi, svetta per centotrentasei metri nel cielo. Il tetto è decorato con duecentotrenta mila tegole smaltate che formano lo stemma austriaco."
+            },
+            {
+                id: 3,
+                name: "Hofburg",
+                type: "Palazzo",
+                lat: 48.2069,
+                lng: 16.3658,
+                image: "https://images.unsplash.com/photo-1559564484-e48b3e040ff4?w=800",
+                description: "Il complesso dell'Hofburg è stato per oltre 600 anni il centro del potere austriaco. Oggi ospita la residenza del Presidente austriaco, numerosi musei tra cui il Museo di Sissi, gli Appartamenti Imperiali, la Biblioteca Nazionale e la famosa Scuola di Equitazione Spagnola.",
+                audioText: "L'Hofburg è stato il centro del potere imperiale per più di seicento anni. Qui hanno vissuto gli Asburgo, inclusa l'amata Imperatrice Sissi. Il complesso comprende diciotto ali, diciannove cortili e duemila seicento stanze."
+            },
+            {
+                id: 4,
+                name: "Belvedere",
+                type: "Museo",
+                lat: 48.1915,
+                lng: 16.3807,
+                image: "https://images.unsplash.com/photo-1587302164675-89588a9f5?w=800",
+                description: "Il Belvedere è un capolavoro barocco composto da due palazzi (Superiore e Inferiore) collegati da splendidi giardini. Ospita la più grande collezione di opere di Gustav Klimt al mondo, incluso il famoso 'Bacio', oltre a capolavori di Schiele e Kokoschka.",
+                audioText: "Il Belvedere, costruito come residenza estiva del Principe Eugenio di Savoia, è oggi uno dei musei più importanti al mondo. Qui potrete ammirare il celebre Bacio di Gustav Klimt, simbolo del Secessionismo viennese."
+            },
+            {
+                id: 5,
+                name: "Prater",
+                type: "Parco",
+                lat: 48.2168,
+                lng: 16.3958,
+                image: "https://images.unsplash.com/photo-1569163139394-de4798aa62b?w=800",
+                description: "Il Prater è il grande parco pubblico di Vienna, famoso per la sua ruota panoramica gigante (Riesenrad), simbolo della città. Oltre al luna park, offre vasti spazi verdi, viali alberati perfetti per passeggiate, jogging e picnic.",
+                audioText: "Il Prater vi accoglie con la sua iconica ruota panoramica, la Riesenrad, alta sessantacinque metri. Costruita nel milleottocentonovantasette, offre una vista spettacolare su tutta Vienna. Il parco si estende per sei chilometri quadrati di verde."
+            },
+            {
+                id: 6,
+                name: "Kunsthistorisches Museum",
+                type: "Museo",
+                lat: 48.2036,
+                lng: 16.3615,
+                image: "https://images.unsplash.com/photo-1581683705068-ca8f49fc7f45?w=800",
+                description: "Il Museo di Storia dell'Arte è uno dei musei più importanti al mondo. Ospita le collezioni imperiali degli Asburgo con capolavori di Bruegel, Raffaello, Vermeer, Velázquez, Rubens e Rembrandt. L'edificio stesso è un'opera d'arte con affreschi di Gustav Klimt.",
+                audioText: "Il Kunsthistorisches Museum custodisce tesori inestimabili. La collezione di Bruegel è la più grande al mondo, mentre la Kunstkammer presenta meraviglie come la Saliera di Benvenuto Cellini."
+            },
+            {
+                id: 7,
+                name: "Naschmarkt",
+                type: "Mercato",
+                lat: 48.1987,
+                lng: 16.3628,
+                image: "https://images.unsplash.com/photo-1555992643-a97955e6e6fb?w=800",
+                description: "Il Naschmarkt è il mercato più famoso di Vienna. Con oltre 120 bancarelle e ristoranti, offre prodotti freschi, specialità internazionali, spezie esotiche e la vera atmosfera viennese. Il sabato si tiene anche un vivace mercato delle pulci.",
+                audioText: "Il Naschmarkt è il ventre di Vienna. Dal sedicesimo secolo, questo mercato offre prodotti freschi e specialità da tutto il mondo. Il nome deriva da Asch, il contenitore di legno per il latte, che qui si vendeva."
+            },
+            {
+                id: 8,
+                name: "Opera di Stato",
+                type: "Teatro",
+                lat: 48.2029,
+                lng: 16.3690,
+                image: "https://images.unsplash.com/photo-1580809878711-492e1e8f6b00?w=800",
+                description: "La Wiener Staatsoper è uno dei teatri d'opera più prestigiosi al mondo. Inaugurata nel 1869, ospita circa 350 spettacoli all'anno. L'edificio neo-rinascimentale è un capolavoro architettonico e offre visite guidate degli interni sontuosi.",
+                audioText: "La Staatsoper è il tempio della musica classica. Qui hanno diretto i più grandi maestri, da Gustav Mahler a Herbert von Karajan. Ogni anno, il Ballo dell'Opera trasforma il teatro nel salone da ballo più elegante del mondo."
+            }
+        ];
+
+        // Initialize Map
+        function initMap() {
+            // Vienna city center coordinates
+            map = L.map('map').setView([48.2082, 16.3738], 13);
+
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Add POI markers
+            POIs.forEach(poi => {
+                const icon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div class="custom-marker"><div class="marker-icon"><i class="fas fa-star"></i></div></div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30]
+                });
+
+                const marker = L.marker([poi.lat, poi.lng], { icon })
+                    .addTo(map)
+                    .on('click', () => selectPOI(poi));
+
+                marker.bindTooltip(poi.name, {
+                    permanent: false,
+                    direction: 'top'
+                });
+            });
+
+            // Add Hotel marker
+            const hotelIcon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div class="custom-marker" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"><div class="marker-icon"><i class="fas fa-hotel"></i></div></div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 30]
+            });
+
+            L.marker([HOTEL.lat, HOTEL.lng], { icon: hotelIcon })
+                .addTo(map)
+                .bindPopup(`<strong>${HOTEL.name}</strong><br>${HOTEL.address}`);
+
+            // Get user location
+            getUserLocation();
+            
+            // Update POI list
+            updatePOIList();
         }
-      }
-    };
 
-    const liveGuides = [
-      {
-        id: 'stephansdom',
-        name: 'Cattedrale di Santo Stefano',
-        lat: 48.208492, lng: 16.373119,
-        radius: 80,
-        fov: 70,
-        blurb: "Simbolo di Vienna in stile gotico.",
-        tts: "Davanti a te la Cattedrale di Santo Stefano.",
-        image: "https://images.unsplash.com/photo-1609856878074-cf31e21ccb6b?w=800",
-        sections: []
-      }
-    ];
+        // Get User Location
+        function getUserLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(
+                    position => {
+                        currentLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
 
-    let map, markers = [], currentCategory = 'monuments';
-    let userMarker = null, userLocation = null, watchId = null, currentSort = 'default';
-    let currentGuideData = null, currentSection = null, speechUtterance = null;
-    let deviceHeading = null, lastGuideId = null, guideCooldown = 8000, lastAnnounceTs = 0;
-    let currentImageIndex = 0, currentImages = [];
+                        if (userMarker) {
+                            userMarker.setLatLng([currentLocation.lat, currentLocation.lng]);
+                        } else {
+                            const userIcon = L.divIcon({
+                                className: 'current-location-marker',
+                                html: `<div style="width: 20px; height: 20px; background: #4285F4; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"></div>`,
+                                iconSize: [20, 20],
+                                iconAnchor: [10, 10]
+                            });
 
-    /* =======================
-       Funzioni principali
-    ======================= */
-    function initMap(){
-      map = L.map('map').setView([hotelLocation.lat, hotelLocation.lng], 14);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution:'© OpenStreetMap contributors'
-      }).addTo(map);
+                            userMarker = L.marker([currentLocation.lat, currentLocation.lng], { icon: userIcon })
+                                .addTo(map)
+                                .bindPopup("La tua posizione");
+                        }
 
-      const hotelIcon = L.divIcon({
-        html:'<div style="background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:#fff;padding:8px;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 3px 10px rgba(0,0,0,.3);">🏨</div>',
-        iconSize:[40,40], iconAnchor:[20,20]
-      });
+                        updateDistances();
+                    },
+                    error => {
+                        console.error("Errore geolocalizzazione:", error);
+                        // Use Vienna center as fallback
+                        currentLocation = { lat: 48.2082, lng: 16.3738 };
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 0,
+                        timeout: 5000
+                    }
+                );
+            }
+        }
 
-      L.marker([hotelLocation.lat, hotelLocation.lng], {icon:hotelIcon})
-        .addTo(map)
-        .bindPopup(`<strong>${hotelLocation.name}</strong><br>${hotelLocation.address}`)
-        .openPopup();
+        // Calculate distance between two points
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const distance = R * c;
+            return distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`;
+        }
 
-      initGeolocation();
-    }
+        // Update distances in POI list
+        function updateDistances() {
+            if (!currentLocation) return;
 
-    function
+            const listContent = document.getElementById('poiListContent');
+            listContent.innerHTML = '';
+
+            POIs.forEach(poi => {
+                const distance = calculateDistance(
+                    currentLocation.lat, currentLocation.lng,
+                    poi.lat, poi.lng
+                );
+
+                const poiItem = document.createElement('div');
+                poiItem.className = 'poi-item';
+                poiItem.onclick = () => {
+                    selectPOI(poi);
+                    togglePOIList();
+                };
+
+                poiItem.innerHTML = `
+                    <div class="poi-icon">
+                        <i class="fas fa-${getIconForType(poi.type)}"></i>
+                    </div>
+                    <div class="poi-info">
+                        <div class="poi-name">${poi.name}</div>
+                        <div class="poi-distance">${distance} da te</div>
+                    </div>
+                `;
+
+                listContent.appendChild(poiItem);
+            });
+        }
+
+        // Get icon for POI type
+        function getIconForType(type) {
+            const icons = {
+                'Palazzo': 'crown',
+                'Chiesa': 'church',
+                'Museo': 'palette',
+                'Parco': 'tree',
+                'Mercato': 'shopping-basket',
+                'Teatro': 'theater-masks'
+            };
+            return icons[type] || 'star';
+        }
+
+        // Select POI
+        function selectPOI(poi) {
+            selectedPOI = poi;
+            
+            // Update location panel
+            document.getElementById('locationTitle').textContent = poi.name;
+            document.getElementById('locationType').textContent = poi.type;
+            document.getElementById('locationDescription').textContent = poi.description;
+            
+            const img = document.getElementById('locationImage');
+            img.src = poi.image;
+            img.style.display = 'block';
+
+            // Show location panel
+            document.getElementById('locationPanel').classList.add('active');
+
+            // Center map on POI
+            map.setView([poi.lat, poi.lng], 16);
+
+            // Stop any playing audio
+            stopAudio();
+        }
+
+        // Toggle POI List
+        function togglePOIList() {
+            document.getElementById('poiList').classList.toggle('active');
+        }
+
+        // Center on user location
+        function centerOnUser() {
+            if (currentLocation) {
+                map.setView([currentLocation.lat, currentLocation.lng], 15);
+                if (userMarker) {
+                    userMarker.openPopup();
+                }
+            } else {
+                alert("Posizione non disponibile. Assicurati di aver autorizzato la geolocalizzazione.");
+            }
+        }
+
+        // Show nearby POIs
+        function showNearbyPOIs() {
+            if (!currentLocation) {
+                alert("Posizione non disponibile. Attendi il caricamento della tua posizione.");
+                return;
+            }
+
+            // Calculate distances and sort POIs
+            const poisWithDistance = POIs.map(poi => {
+                const R = 6371;
+                const dLat = (poi.lat - currentLocation.lat) * Math.PI / 180;
+                const dLon = (poi.lng - currentLocation.lng) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(currentLocation.lat * Math.PI / 180) * Math.cos(poi.lat * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                const distance = R * c;
+                
+                return { ...poi, distance };
+            }).sort((a, b) => a.distance - b.distance);
+
+            // Select nearest POI
+            if (poisWithDistance.length > 0) {
+                selectPOI(poisWithDistance[0]);
+                
+                // Show notification
+                const distanceText = poisWithDistance[0].distance < 1 
+                    ? `${Math.round(poisWithDistance[0].distance * 1000)}m` 
+                    : `${poisWithDistance[0].distance.toFixed(1)}km`;
+                    
+                showNotification(`Il luogo più vicino è ${poisWithDistance[0].name} a ${distanceText} da te`);
+            }
+        }
+
+        // Show notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 15px 25px;
+                border-radius: 30px;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+                z-index: 2000;
+                animation: slideDown 0.3s ease;
+                max-width: 80%;
+                text-align: center;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideUp 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Audio Controls
+        function toggleAudio() {
+            if (!selectedPOI) return;
+
+            const playBtn = document.getElementById('playBtn');
+            
+            if (isPlaying) {
+                stopAudio();
+            } else {
+                playAudio();
+            }
+        }
+
+        function playAudio() {
+            if (!selectedPOI || !selectedPOI.audioText) return;
+
+            const playBtn = document.getElementById('playBtn');
+            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            playBtn.classList.add('pause');
+            isPlaying = true;
+
+            // Use Web Speech API for Italian speech
+            if ('speechSynthesis' in window) {
+                currentUtterance = new SpeechSynthesisUtterance(selectedPOI.audioText);
+                currentUtterance.lang = 'it-IT';
+                currentUtterance.rate = 0.9;
+                currentUtterance.pitch = 1;
+                currentUtterance.volume = 1;
+
+                currentUtterance.onend = () => {
+                    stopAudio();
+                };
+
+                currentUtterance.onerror = (event) => {
+                    console.error('Errore sintesi vocale:', event);
+                    stopAudio();
+                };
+
+                // Simulate progress bar
+                const duration = selectedPOI.audioText.length * 50; // Approximate duration
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    if (!isPlaying) {
+                        clearInterval(progressInterval);
+                        return;
+                    }
+                    progress += 100;
+                    const percentage = (progress / duration) * 100;
+                    document.getElementById('progressBar').style.width = Math.min(percentage, 100) + '%';
+                    
+                    const currentTime = Math.floor(progress / 1000);
+                    const totalTime = Math.floor(duration / 1000);
+                    document.getElementById('audioTime').textContent = 
+                        `${formatTime(currentTime)} / ${formatTime(totalTime)}`;
+                    
+                    if (progress >= duration) {
+                        clearInterval(progressInterval);
+                    }
+                }, 100);
+
+                speechSynthesis.speak(currentUtterance);
+            } else {
+                alert("Il tuo browser non supporta la sintesi vocale. Prova con un browser più recente.");
+                stopAudio();
+            }
+        }
+
+        function stopAudio() {
+            const playBtn = document.getElementById('playBtn');
+            playBtn.innerHTML = '<i class="fas fa-play"></i>';
+            playBtn.classList.remove('pause');
+            isPlaying = false;
+
+            if (speechSynthesis && speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+            }
+
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('audioTime').textContent = '0:00 / 0:00';
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Navigation Functions
+        function navigateToLocation() {
+            if (!selectedPOI) {
+                alert("Seleziona prima un luogo da visitare");
+                return;
+            }
+
+            if (!currentLocation) {
+                alert("Posizione corrente non disponibile");
+                return;
+            }
+
+            // Open navigation in external maps app
+            const url = `https://www.google.com/maps/dir/?api=1&origin=${currentLocation.lat},${currentLocation.lng}&destination=${selectedPOI.lat},${selectedPOI.lng}&travelmode=walking`;
+            window.open(url, '_blank');
+        }
+
+        function navigateToHotel() {
+            if (!currentLocation) {
+                alert("Posizione corrente non disponibile");
+                return;
+            }
+
+            // Open navigation to hotel
+            const url = `https://www.google.com/maps/dir/?api=1&origin=${currentLocation.lat},${currentLocation.lng}&destination=${HOTEL.lat},${HOTEL.lng}&travelmode=walking`;
+            window.open(url, '_blank');
+        }
+
+        // Update POI List
+        function updatePOIList() {
+            const listContent = document.getElementById('poiListContent');
+            listContent.innerHTML = '';
+
+            POIs.forEach(poi => {
+                const poiItem = document.createElement('div');
+                poiItem.className = 'poi-item';
+                poiItem.onclick = () => {
+                    selectPOI(poi);
+                    togglePOIList();
+                };
+
+                poiItem.innerHTML = `
+                    <div class="poi-icon">
+                        <i class="fas fa-${getIconForType(poi.type)}"></i>
+                    </div>
+                    <div class="poi-info">
+                        <div class="poi-name">${poi.name}</div>
+                        <div class="poi-distance">Calcolo distanza...</div>
+                    </div>
+                `;
+
+                listContent.appendChild(poiItem);
+            });
+        }
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideDown {
+                from {
+                    opacity: 0;
+                    transform: translateX(-50%) translateY(-20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(-50%) translateY(0);
+                }
+            }
+            
+            @keyframes slideUp {
+                from {
+                    opacity: 1;
+                    transform: translateX(-50%) translateY(0);
+                }
+                to {
+                    opacity: 0;
+                    transform: translateX(-50%) translateY(-20px);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Service Worker for offline support (optional)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => {
+                console.log('Service Worker registration failed:', err);
+            });
+        }
+
+        // Handle orientation change
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 500);
+        });
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            map.invalidateSize();
+        });
+
+        // Initialize app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            
+            // Show welcome message
+            setTimeout(() => {
+                showNotification("Benvenuto a Vienna! Esplora i luoghi più belli della città 🎭");
+            }, 1000);
+
+            // Request notification permission for future features
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        });
+
+        // Prevent scrolling when location panel is active
+        document.getElementById('locationPanel').addEventListener('touchmove', (e) => {
+            e.stopPropagation();
+        });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.getElementById('locationPanel').classList.remove('active');
+                document.getElementById('poiList').classList.remove('active');
+            }
+            if (e.key === ' ' && selectedPOI) {
+                e.preventDefault();
+                toggleAudio();
+            }
+            if (e.key === 'l' || e.key === 'L') {
+                togglePOIList();
+            }
+            if (e.key === 'c' || e.key === 'C') {
+                centerOnUser();
+            }
+        });
+
+        // Progressive enhancement
+        if ('vibrate' in navigator) {
+            document.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    navigator.vibrate(10);
+                });
+            });
+        }
+
+        // Check for updates periodically
+        setInterval(() => {
+            if (currentLocation) {
+                updateDistances();
+            }
+        }, 30000); // Update every 30 seconds
+
+        // Handle offline/online status
+        window.addEventListener('online', () => {
+            showNotification("Connessione ripristinata ✓");
+        });
+
+        window.addEventListener('offline', () => {
+            showNotification("Modalità offline - Alcune funzioni potrebbero non essere disponibili");
+        });
+    </script>
+</body>
+</html>
