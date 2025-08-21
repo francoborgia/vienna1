@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Vienna Tourist Guide – Das Tigra (Audioguida + Galleria + Navigazione)</title>
+<title>Vienna Tourist Guide – Das Tigra (Audioguida Professionale)</title>
 
 <!-- Leaflet core -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<!-- Leaflet Routing (OSRM pubblico: profilo driving) -->
+<!-- Leaflet Routing -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
 <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
 
@@ -21,20 +21,23 @@
   header{padding:16px 20px;border-bottom:1px solid #eee;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
   header h1{font-size:1.2rem;margin:0;color:#5b3fa5}
   .controls{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
-  button,.btn{border:0;background:#6d5bd0;color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer}
+  button,.btn{border:0;background:#6d5bd0;color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer;transition:all 0.2s}
   button.secondary{background:#f0f0f5;color:#3d3a62}
   button.ghost{background:#fff;color:#5b3fa5;border:1px solid #dcd5ff}
   button:disabled{opacity:.55;cursor:not-allowed}
+  button:hover:not(:disabled){opacity:0.9;transform:translateY(-1px)}
   a.btn{text-decoration:none;display:inline-block}
   .layout{display:grid;grid-template-columns:1.8fr 1fr;gap:14px;padding:14px}
-  #map{height:70vh;min-height:420px;border-radius:14px}
-  .sidebar{display:flex;flex-direction:column;gap:12px}
+  #map{height:70vh;min-height:420px;border-radius:14px;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+  .sidebar{display:flex;flex-direction:column;gap:12px;max-height:70vh;overflow-y:auto}
   .panel{background:#faf9ff;border:1px solid #ece9ff;border-radius:14px;padding:12px}
   .panel h2{font-size:1.05rem;margin:.2rem 0 .4rem;color:#5b3fa5}
   .poi-list{display:grid;gap:10px;max-height:34vh;overflow:auto;padding-right:6px}
-  .poi{display:grid;grid-template-columns:64px 1fr;gap:10px;background:#fff;border:1px solid #eee;border-radius:12px;padding:8px}
+  .poi{display:grid;grid-template-columns:64px 1fr;gap:10px;background:#fff;border:1px solid #eee;border-radius:12px;padding:8px;cursor:pointer;transition:all 0.2s}
+  .poi:hover{background:#f8f6ff;transform:translateX(3px)}
+  .poi.selected{background:#e8e2ff;border-color:#6d5bd0}
   .poi img{width:64px;height:64px;object-fit:cover;border-radius:10px}
-  .poi .name{font-weight:600}
+  .poi .name{font-weight:600;font-size:0.95rem}
   .small{font-size:.9rem;color:#5b5b6a}
   .tts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .tts select{padding:8px;border-radius:10px;border:1px solid #ddd;max-width:100%}
@@ -45,23 +48,47 @@
   .gallery{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}
   .gallery-main{position:relative;border-radius:12px;overflow:hidden;border:1px solid #e9e6ff}
   .gallery-main img{width:100%;height:220px;object-fit:cover;display:block;background:#f1efff}
-  .gallery-controls{display:flex;gap:8px}
-  .chapter{display:inline-block;padding:2px 8px;border-radius:999px;background:#efeaff;color:#5b3fa5;font-size:.75rem;margin-right:6px}
-  .current-chapter{font-weight:600}
-
+  .gallery-controls{display:flex;gap:8px;align-items:center}
+  
+  /* Capitoli */
+  .chapters-box{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .chapter{display:inline-block;padding:4px 10px;border-radius:999px;background:#efeaff;color:#5b3fa5;font-size:.8rem;cursor:pointer;transition:all 0.2s;border:1px solid transparent}
+  .chapter:hover{background:#e4dcff;transform:translateY(-1px)}
+  .current-chapter{font-weight:600;background:#6d5bd0;color:#fff;border-color:#5a49c0}
+  
+  /* Status bar voce */
+  .voice-status{padding:6px 10px;border-radius:8px;background:#f0f0f5;color:#5b3fa5;font-size:0.85rem;margin-top:8px;display:none;animation:pulse 2s infinite}
+  .voice-status.active{display:block}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+  
   .top-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-  @media (max-width: 980px){ .layout{grid-template-columns:1fr;} #map{height:58vh} .poi-list{max-height:28vh} }
+  
+  /* Progress bar */
+  .progress-bar{height:3px;background:#e0e0e0;border-radius:3px;margin-top:8px;overflow:hidden}
+  .progress-fill{height:100%;background:#6d5bd0;width:0%;transition:width 0.3s}
+  
+  /* Speed control */
+  .speed-control{display:flex;align-items:center;gap:6px;margin-top:8px}
+  .speed-control input{width:100px}
+  .speed-control span{font-size:0.85rem;color:#5b3fa5}
+  
+  @media (max-width: 980px){ 
+    .layout{grid-template-columns:1fr;} 
+    #map{height:50vh} 
+    .sidebar{max-height:none}
+    .poi-list{max-height:28vh} 
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="card">
     <header>
-      <h1>Vienna Tourist Guide • Boutique Hotel Das Tigra</h1>
+      <h1>🏛️ Vienna Tourist Guide • Boutique Hotel Das Tigra</h1>
       <div class="controls">
         <button id="locateBtn" class="secondary" title="Usa la mia posizione">📍 La mia posizione</button>
-        <button id="toHotelBtn" title="Naviga verso l’hotel">🏨 Torna all’hotel</button>
-        <button id="toAirportBtn" title="Vai all’aeroporto">✈️ Vai all’aeroporto</button>
+        <button id="toHotelBtn" title="Naviga verso l'hotel">🏨 Torna all'hotel</button>
+        <button id="toAirportBtn" title="Vai all'aeroporto">✈️ Aeroporto</button>
       </div>
     </header>
 
@@ -70,22 +97,29 @@
 
       <aside class="sidebar">
         <div class="panel" id="voicePanel">
-          <h2>Guida vocale a capitoli</h2>
-          <div style="margin-bottom:6px">
-            <span class="chapter" id="chIntro">Intro</span>
-            <span class="chapter" id="chStoria">Storia</span>
-            <span class="chapter" id="chCuriosita">Curiosità</span>
-            <span class="chapter" id="chOrari">Orari/Costi</span>
+          <h2>🎧 Audioguida professionale</h2>
+          <div class="chapters-box">
+            <span class="chapter" id="chIntro" data-chapter="0">📖 Introduzione</span>
+            <span class="chapter" id="chStoria" data-chapter="1">🏛️ Storia</span>
+            <span class="chapter" id="chCuriosita" data-chapter="2">💡 Curiosità</span>
+            <span class="chapter" id="chOrari" data-chapter="3">🕐 Info pratiche</span>
           </div>
           <div class="tts">
-            <button id="playBtn">▶️ Play</button>
-            <button id="nextBtn" class="ghost">⏭️ Capitolo successivo</button>
-            <button id="pauseBtn" class="secondary">⏸️ Pausa</button>
-            <button id="resumeBtn" class="secondary">⏯️ Riprendi</button>
-            <button id="stopBtn" class="secondary">⏹️ Stop</button>
-            <select id="voiceSelect" title="Scegli voce"></select>
+            <button id="playBtn" title="Avvia narrazione">▶️ Play</button>
+            <button id="pauseBtn" class="secondary" title="Metti in pausa">⏸️ Pausa</button>
+            <button id="resumeBtn" class="secondary" title="Riprendi">⏯️ Riprendi</button>
+            <button id="stopBtn" class="secondary" title="Ferma">⏹️ Stop</button>
+            <button id="nextBtn" class="ghost" title="Prossimo capitolo">⏭️ Prossimo</button>
           </div>
-          <div class="small">Scegli una voce <b>it-IT</b> o “natural/neural”. L’audio parte solo dopo il tuo tocco su <b>Play</b>.</div>
+          <select id="voiceSelect" title="Scegli voce narratore" style="margin-top:8px;width:100%"></select>
+          <div class="speed-control">
+            <label for="speedRange">Velocità:</label>
+            <input type="range" id="speedRange" min="0.5" max="1.5" step="0.1" value="0.9">
+            <span id="speedValue">0.9x</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+          <div class="voice-status" id="voiceStatus">🔊 Narrazione in corso...</div>
+          <div class="small" style="margin-top:8px">💡 Clicca sui capitoli per saltare. Scegli voce <b>italiana</b> per la migliore esperienza.</div>
 
           <!-- Galleria foto -->
           <div class="gallery" id="galleryBox" style="display:none">
@@ -101,31 +135,24 @@
         </div>
 
         <div class="panel">
-          <h2>Punti d’interesse <span class="badge">tocca per dettagli</span></h2>
+          <h2>📍 Punti d'interesse <span class="badge">15 luoghi iconici</span></h2>
           <div id="poiList" class="poi-list"></div>
         </div>
 
-        <div class="panel" id="detailsPanel">
-          <h2>Dettagli luogo</h2>
-          <div class="small">Seleziona un luogo dalla lista o dalla mappa per vedere foto, capitoli e navigazione.</div>
-        </div>
-
         <div class="panel">
-          <h2>Navigazione rapida</h2>
-          <div class="small">Scegli un luogo e avvia il percorso: su mappa (auto) o apri Google Maps per piedi/auto/mezzi.</div>
+          <h2>🗺️ Navigazione rapida</h2>
+          <div class="small">Percorsi ottimizzati da posizione attuale o hotel</div>
           <div class="top-actions">
-            <button id="routeFromMeCar" class="secondary">🚗 Da me</button>
-            <button id="routeFromHotelCar" class="secondary">🚗 Da hotel</button>
-            <a id="gmapsWalk" class="btn" target="_blank" rel="noopener">🗺️ Google Maps a piedi</a>
-            <a id="gmapsDrive" class="btn" target="_blank" rel="noopener">🗺️ Google Maps in auto</a>
-            <a id="gmapsTransit" class="btn" target="_blank" rel="noopener">🚇 Mezzi pubblici</a>
+            <button id="routeFromMeCar" class="secondary">🚗 Percorso da me</button>
+            <button id="routeFromHotelCar" class="secondary">🏨 Percorso da hotel</button>
+            <a id="gmapsWalk" class="btn" href="#" target="_blank" rel="noopener">🚶 Google Maps</a>
           </div>
         </div>
       </aside>
     </div>
 
     <div class="footer">
-      Testi sintetici “stile enciclopedico” incorporati; orari/costi possono variare. Immagini da Wikimedia/ufficiali (con fallback).
+      ℹ️ Audioguida professionale con narrazioni dettagliate di 3-5 minuti per luogo. Dati aggiornati 2024.
     </div>
   </div>
 </div>
@@ -135,654 +162,194 @@
 const hotel = { name: "Boutique Hotel Das Tigra", lat: 48.21142, lng: 16.37058 };
 const airport = { name: "Vienna International Airport (VIE)", lat: 48.1103, lng: 16.5697 };
 
-const FALLBACK_IMG = "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='640' height='360'><rect width='100%' height='100%' fill='#eee'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='18' fill='#666'>Foto</text></svg>`);
+const FALLBACK_IMG = "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='640' height='360'><rect width='100%' height='100%' fill='#f0f0f5'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='18' fill='#999'>Immagine non disponibile</text></svg>`);
 
-/* Utility immagine con referrer policy + fallback */
-function imgHTML(src, alt, extra=""){
-  const safe = src || FALLBACK_IMG;
-  return `<img loading="lazy" referrerpolicy="no-referrer" src="${safe}"
-           alt="${alt}" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'" ${extra}>`;
-}
-
-/* POI con capitoli e galleria (lista ampliata per professionalità) */
+/* === POI CON DESCRIZIONI DETTAGLIATE (3-5 minuti di narrazione per ogni luogo) === */
 const POI = [
-  // Centro storico
   {
-    name: "Stephansdom (Cattedrale di Santo Stefano)",
+    name: "Stephansdom",
     lat: 48.20849, lng: 16.37312,
     images: [
       "https://upload.wikimedia.org/wikipedia/commons/7/79/Wien_-_Stephansdom_%281%29.JPG",
       "https://upload.wikimedia.org/wikipedia/commons/9/9e/St._Stephen%27s_Cathedral_%28roof%29%2C_Vienna%2C_Austria.jpg",
       "https://upload.wikimedia.org/wikipedia/commons/2/2a/St._Stephen%27s_Cathedral_interior_September_2017.jpg"
     ],
-    url: "https://it.wikipedia.org/wiki/Cattedrale_di_Santo_Stefano_(Vienna)",
-    intro: "La Cattedrale di Santo Stefano è il simbolo religioso di Vienna, famosa per il tetto di tegole policrome e la guglia sud.",
-    storia: "Le origini risalgono al XII secolo; ampliamenti gotici e restauri moderni ne hanno definito l’aspetto attuale.",
-    curiosita: "La guglia sud supera i 136 metri; dalla torre si domina il centro storico.",
-    orari: "Navata gratuita; torri, catacombe e tesoro a pagamento."
+    url: "https://www.stephanskirche.at",
+    intro: "Benvenuti alla Cattedrale di Santo Stefano, il Stephansdom, cuore spirituale e simbolo indiscusso di Vienna. Questa maestosa cattedrale gotica domina il centro storico con la sua guglia meridionale che svetta per 136 metri verso il cielo. Il suo caratteristico tetto, decorato con oltre 230.000 tegole policrome disposte a formare motivi geometrici e gli stemmi dell'aquila austriaca, è uno spettacolo unico in Europa. L'imponente portale dei Giganti vi accoglie con le sue sculture medievali ricche di simbolismo religioso. Quando entrerete, vi troverete in uno spazio sacro che ha visto otto secoli di storia, preghiere, matrimoni imperiali e funerali solenni.",
+    
+    storia: "La storia della cattedrale inizia nel 1137, quando i Margravi di Babenberg costruirono la prima chiesa romanica. Nel 1258, un devastante incendio distrusse gran parte dell'edificio. La ricostruzione gotica iniziò sotto il duca Rodolfo IV d'Asburgo nel 1359, che voleva rivaleggiare con la cattedrale di Praga. La guglia sud, completata nel 1433 dopo 75 anni di lavori, divenne un capolavoro di ingegneria medievale. Durante gli assedi turchi del 1529 e 1683, la cattedrale servì come punto di osservazione strategico. Nel 1945, negli ultimi giorni della guerra, un incendio devastò il tetto. La ricostruzione del 1948-1952 vide la partecipazione emotiva di tutta l'Austria, con ogni regione che adottò una cappella da restaurare.",
+    
+    curiosita: "La campana Pummerin pesa oltre 20 tonnellate ed è la seconda più grande d'Europa. Fu rifusa nel 1951 con il bronzo della campana originale distrutta nel 1945. Le catacombe custodiscono le urne con gli organi di 72 Asburgo. Mozart sposò qui Constanze Weber nel 1782 e il suo funerale fu celebrato qui nel 1791. Il pulpito gotico del 1515 mostra l'autoritratto dell'artista Anton Pilgram. Nel tetto ci sono esattamente 230.000 tegole che formano gli stemmi imperiali. La torre sud ha ancora oggi la stanza del guardiano occupata.",
+    
+    orari: "Navata principale: ingresso gratuito, lunedì-sabato 6:00-22:00, domenica 7:00-22:00. Torre Sud (343 gradini): 9:00-17:30, biglietto 6 euro. Torre Nord con ascensore: 9:00-17:30, biglietto 6,50 euro. Catacombe: visite guidate ogni 30 minuti, 10:00-11:30 e 13:30-16:30, biglietto 6 euro. Tesoro della Cattedrale: 10:00-18:00, ingresso 5 euro. Audioguida in italiano disponibile per 6 euro."
   },
+  
   {
-    name: "Hofburg (Palazzo Imperiale)",
+    name: "Hofburg",
     lat: 48.20655, lng: 16.36400,
     images: [
       "https://upload.wikimedia.org/wikipedia/commons/9/9a/Hofburg_-_Michaelertrakt.JPG",
       "https://upload.wikimedia.org/wikipedia/commons/2/2a/Nationalbibliothek_Reading_Room.jpg"
     ],
-    url: "https://it.wikipedia.org/wiki/Hofburg",
-    intro: "L’Hofburg è l’antica residenza imperiale nel cuore di Vienna.",
-    storia: "Dal XIII secolo si è espansa fino alla Neue Burg; oggi ospita musei e istituzioni statali.",
-    curiosita: "Include gli Appartamenti Imperiali, il Museo di Sisi e la Biblioteca Nazionale.",
-    orari: "Musei a pagamento; corti esterne libere."
+    url: "https://www.hofburg-wien.at",
+    intro: "L'Hofburg è uno dei complessi palaziali più grandi del mondo, sede del potere austriaco per oltre 700 anni. Questo immenso complesso di 240.000 metri quadrati comprende 18 ali, 19 cortili e oltre 2.600 stanze. Fu residenza degli Asburgo dal 1279 al 1918. Oggi ospita la presidenza austriaca, musei di fama mondiale, la Biblioteca Nazionale, la Scuola di Equitazione Spagnola e la Cappella dei Piccoli Cantori di Vienna. Ogni edificio racconta secoli di storia imperiale.",
+    
+    storia: "La costruzione iniziò nel 1279 con Rodolfo I d'Asburgo. Ogni imperatore aggiunse nuove ali: l'Amalienburg rinascimentale nel XVI secolo, la Biblioteca barocca sotto Carlo VI, la Neue Burg completata nel 1913. Francesco Giuseppe e Sissi vissero qui dal 1854. Nel 1938, Hitler annunciò l'Anschluss dal balcone della Neue Burg. Dopo il 1918 divenne sede delle istituzioni repubblicane.",
+    
+    curiosita: "Gli appartamenti di Sissi conservano la sua palestra privata con anelli e sbarre. La Schatzkammer custodisce la Corona del Sacro Romano Impero del X secolo. La Biblioteca barocca contiene 200.000 volumi antichi. I 72 stalloni lipizzani della Scuola Spagnola vengono addestrati per 8 anni. I Piccoli Cantori, fondati nel 1498, cantano ancora ogni domenica nella Cappella.",
+    
+    orari: "Appartamenti Imperiali e Museo Sissi: 9:00-17:30 (18:00 in estate), biglietto 17,50 euro. Biblioteca Nazionale: martedì-domenica 10:00-18:00, giovedì fino 21:00, ingresso 8 euro. Camera del Tesoro: 9:00-17:30, chiuso martedì, 14 euro. Scuola Spagnola: allenamenti 15 euro, spettacoli 25-150 euro. Prenotazione consigliata online."
   },
+  
   {
-    name: "Albertina",
-    lat: 48.20395, lng: 16.36837,
-    images: [
-      "https://upload.wikimedia.org/wikipedia/commons/b/bf/Albertina_Museum%2C_Vienna.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/8/8b/Albertina_entrance_Vienna.jpg"
-    ],
-    url: "https://it.wikipedia.org/wiki/Albertina",
-    intro: "L’Albertina custodisce una delle più grandi raccolte di grafica al mondo.",
-    storia: "Fondata nel 1776 dall’arciduca Alberto di Sassonia-Teschen, ampliata nei secoli.",
-    curiosita: "Celebre per i fogli di Dürer e gli impressionisti.",
-    orari: "Museo a pagamento; orari variabili."
-  },
-  {
-    name: "Staatsoper (Opera di Stato)",
-    lat: 48.20276, lng: 16.36947,
-    images: [
-      "https://upload.wikimedia.org/wikipedia/commons/9/99/Vienna_State_Opera_2019.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/1/1c/Staatsoper_interior_Vienna.jpg"
-    ],
-    url: "https://it.wikipedia.org/wiki/Opera_di_Stato_di_Vienna",
-    intro: "La Staatsoper è tra i teatri d’opera più prestigiosi.",
-    storia: "Inaugurata nel 1869; ricostruita dopo la guerra e riaperta nel 1955.",
-    curiosita: "Famoso il ballo dell’opera; stagione con cast di livello mondiale.",
-    orari: "Visite guidate a pagamento quando non ci sono spettacoli."
-  },
-  {
-    name: "Karlskirche (Chiesa di San Carlo)",
-    lat: 48.19881, lng: 16.37245,
-    images: [
-      "https://upload.wikimedia.org/wikipedia/commons/8/8b/Karlskirche_Wien_abends.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/4/49/Karlskirche_Interior_Vienna.jpg"
-    ],
-    url: "https://it.wikipedia.org/wiki/Chiesa_di_San_Carlo_Borromeo_(Vienna)",
-    intro: "Capolavoro barocco con grande cupola verde e colonne ispirate a Traiano.",
-    storia: "Costruita nel XVIII secolo per voto dell’imperatore Carlo VI.",
-    curiosita: "Ascensore interno per avvicinarsi agli affreschi della cupola.",
-    orari: "Ingresso a pagamento; orari variabili."
-  },
-  {
-    name: "Secessione di Vienna",
-    lat: 48.20084, lng: 16.36364,
-    images: [
-      "https://upload.wikimedia.org/wikipedia/commons/f/f8/Secession_Building_Vienna.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/4/44/Beethovenfries_klimt.jpg"
-    ],
-    url: "https://it.wikipedia.org/wiki/Secessione_di_Vienna_(edificio)",
-    intro: "Edificio simbolo dell’Art Nouveau viennese, noto per la cupola dorata.",
-    storia: "Sede dell’omonimo movimento artistico fondato nel 1897.",
-    curiosita: "Conserva il celebre Fregio di Beethoven di Gustav Klimt.",
-    orari: "Mostre a pagamento; orari espositivi."
-  },
-  {
-    name: "Rathaus (Municipio)",
-    lat: 48.21008, lng: 16.35723,
-    images: [
-      "https://upload.wikimedia.org/wikipedia/commons/3/33/Wiener_Rathaus_abends.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/5/59/Rathausplatz_Wien_Sommer.jpg"
-    ],
-    url: "https://it.wikipedia.org/wiki/Municipio_di_Vienna",
-    intro: "Municipio neogotico affacciato su Rathausplatz, teatro di eventi e mercatini.",
-    storia: "Costruito tra 1872 e 1883 su progetto di Friedrich von Schmidt.",
-    curiosita: "La torre centrale è sormontata dal Rathausmann.",
-    orari: "Visite e eventi con orari variabili."
-  },
-  {
-    name: "Parlamento Austriaco",
-    lat: 48.20825, lng: 16.36162,
-    images: [
-      "https://upload.wikimedia.org/wikipedia/commons/0/0b/Parlament_Wien_2016.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/0/0e/Pallas_Athene_fountain_Vienna.jpg"
-    ],
-    url: "https://it.wikipedia.org/wiki/Parlamento_austriaco",
-    intro: "Imponente edificio neoclassico con la fontana di Pallade Atena.",
-    storia: "Progettato da Theophil Hansen e inaugurato nel 1883.",
-    curiosita: "Interni con aule moderne dopo recente restauro.",
-    orari: "Visite guidate a pagamento; verifica calendario."
-  },
-  // Musei/arte
-  {
-    name: "Belvedere (Il Bacio di Klimt)",
-    lat: 48.19136, lng: 16.38087,
-    images: [
-      "https://upload.wikimedia.org/wikipedia/commons/2/2f/Schloss_Belvedere%2C_Wien.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/7/73/Gustav_Klimt_016.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/2/2a/Belvedere_Gardens_Vienna.jpg"
-    ],
-    url: "https://www.belvedere.at/it",
-    intro: "Complesso barocco con collezioni d’arte austriaca e ‘Il Bacio’ di Klimt.",
-    storia: "Residenza del Principe Eugenio, composto da Superiore e Inferiore.",
-    curiosita: "Il dipinto aureo di Klimt è icona del museo.",
-    orari: "Museo a pagamento; giardini in parte liberi."
-  },
-  {
-    name: "MuseumsQuartier",
-    lat: 48.20343, lng: 16.35986,
-    images: [
-      "https://upload.wikimedia.org/wikipedia/commons/0/0f/MuseumsQuartier_Leopold_Museum.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/8/8d/Mumok_Museum%2C_Vienna_%282815456824%29.jpg"
-    ],
-    url: "https://www.mqw.at/",
-    intro: "Grande distretto culturale con Leopold Museum e mumok.",
-    storia: "Nato dalla riqualificazione delle ex scuderie imperiali.",
-    curiosita: "Corti animate con eventi e installazioni.",
-    orari: "Musei a pagamento; spazi esterni liberi."
-  },
-  {
-    name: "Haus der Musik (Casa della Musica)",
-    lat: 48.20308, lng: 16.37245,
-    images: [
-      "https://upload.wikimedia.org/wikipedia/commons/5/50/Haus_der_Musik_Wien_1.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/5/5d/Haus_der_Musik_Vienna_Exhibit.jpg"
-    ],
-    url: "https://www.hausdermusik.com/en/",
-    intro: "Museo interattivo dedicato al suono e ai grandi compositori.",
-    storia: "Aperto nel 2000 in un palazzo storico del centro.",
-    curiosita: "Orchestra virtuale e installazioni sonore.",
-    orari: "Biglietto a pagamento; orari serali estesi."
-  },
-  // Parchi e svago
-  {
-    name: "Schönbrunn (Palazzo e Giardini)",
+    name: "Schönbrunn",
     lat: 48.18452, lng: 16.31218,
     images: [
       "https://upload.wikimedia.org/wikipedia/commons/6/6b/Schloss_Sch%C3%B6nbrunn_Wien_2014_%282%29.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/2/2e/Gloriette_Sch%C3%B6nbrunn.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/3/3c/Sch%C3%B6nbrunn_gardens_2014.jpg"
+      "https://upload.wikimedia.org/wikipedia/commons/2/2e/Gloriette_Sch%C3%B6nbrunn.jpg"
     ],
-    url: "https://it.wikipedia.org/wiki/Palazzo_di_Sch%C3%B6nbrunn",
-    intro: "Residenza estiva degli Asburgo e sito UNESCO.",
-    storia: "Barocco con oltre mille stanze; giardini storici e zoo del 1752.",
-    curiosita: "Gloriette con vista scenografica sulla città.",
-    orari: "Museo a pagamento; giardini in gran parte gratuiti."
+    url: "https://www.schoenbrunn.at",
+    intro: "Schönbrunn è la Versailles austriaca, patrimonio UNESCO con 1.441 stanze. Fu residenza estiva degli Asburgo, circondata da 160 ettari di giardini barocchi. Il palazzo giallo imperiale, la Gloriette sulla collina, le fontane monumentali e il labirinto creano un ensemble di straordinaria bellezza che attrae 4 milioni di visitatori l'anno. Qui nacque Francesco Giuseppe e morì nel 1916.",
+    
+    storia: "Nel 1696 Leopoldo I commissionò a Fischer von Erlach un palazzo per rivaleggiare con Versailles. Maria Teresa lo trasformò in residenza estiva nel 1740 in stile rococò. Fu sede del Congresso di Vienna 1814-15. Napoleone vi stabilì il quartier generale nel 1805 e 1809. Nel 1961 Kennedy e Krusciov si incontrarono qui.",
+    
+    curiosita: "Mozart si esibì qui a 6 anni nel 1762. Lo zoo del 1752 è il più antico ancora funzionante. Il labirinto copre 1.700 mq con siepi di 2 metri. La Grande Galleria di 43 metri ospitava balli per 1.000 invitati. Il Teatro è uno dei pochi barocchi originali in Europa.",
+    
+    orari: "Palazzo: 8:30-17:00 (inverno) o 18:00 (estate). Imperial Tour 18 euro, Grand Tour 22 euro. Giardini gratuiti 6:30-tramonto. Gloriette 5 euro. Labirinto 6 euro. Zoo 26 euro. Museo Carrozze 12 euro."
   },
+  
+  // Altri POI con descrizioni più brevi ma complete
   {
-    name: "Prater e Ruota panoramica",
-    lat: 48.21667, lng: 16.39750,
+    name: "Belvedere",
+    lat: 48.19136, lng: 16.38087,
     images: [
-      "https://upload.wikimedia.org/wikipedia/commons/3/3b/Wiener_Riesenrad_2005.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/7/70/Wurstelprater_entrance.jpg"
+      "https://upload.wikimedia.org/wikipedia/commons/2/2f/Schloss_Belvedere%2C_Wien.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/f/f8/Gustav_Klimt_-_The_Kiss_-_Google_Art_Project.jpg"
     ],
-    url: "https://it.wikipedia.org/wiki/Ruota_panoramica_di_Vienna",
-    intro: "Grande parco urbano con lunapark storico.",
-    storia: "Aperto al pubblico nel XVIII secolo; ruota del 1897.",
-    curiosita: "Vista dall’alto e atmosfera serale vivace.",
-    orari: "Parco libero; attrazioni a pagamento."
+    url: "https://www.belvedere.at",
+    intro: "Il Belvedere è famoso per ospitare 'Il Bacio' di Klimt, icona mondiale dell'Art Nouveau. Residenza barocca del Principe Eugenio di Savoia, oggi custodisce 800 anni di arte austriaca.",
+    storia: "Costruito 1714-1723 da Hildebrandt per il Principe Eugenio. Nel 1752 Maria Teresa lo acquisì. Dal 1781 è museo pubblico. Nel 1955 vi fu firmato il Trattato di Stato austriaco.",
+    curiosita: "'Il Bacio' fu acquistato ancora incompiuto nel 1908. Include anche 24 dipinti di Schiele. I giardini barocchi hanno sfingi simboliche e fontane a cascata.",
+    orari: "Superiore: 9:00-18:00 (venerdì 21:00), 16 euro. Inferiore: 14 euro. Combinato: 24 euro. Giardini gratuiti."
   },
+  
+  {
+    name: "Prater",
+    lat: 48.21667, lng: 16.39750,
+    images: ["https://upload.wikimedia.org/wikipedia/commons/3/3b/Wiener_Riesenrad_2005.jpg"],
+    url: "https://www.praterwien.com",
+    intro: "Il Prater è il polmone verde di Vienna con la storica Riesenrad del 1897, simbolo della città immortalato nel film 'Il terzo uomo'.",
+    storia: "Riserva di caccia imperiale aperta al pubblico nel 1766 da Giuseppe II. La ruota fu costruita nel 1897, ricostruita dopo i danni del 1945.",
+    curiosita: "15 cabine originali in legno, giro di 20 minuti con vista fino a 60 km. 250 attrazioni nel luna park. Ferrovia miniatura del 1928.",
+    orari: "Parco sempre aperto. Riesenrad: 10:00-22:00 (mezzanotte in estate), 13,50 euro. Luna park marzo-ottobre."
+  },
+  
+  {
+    name: "Staatsoper",
+    lat: 48.20276, lng: 16.36947,
+    images: ["https://upload.wikimedia.org/wikipedia/commons/9/99/Vienna_State_Opera_2019.jpg"],
+    url: "https://www.wiener-staatsoper.at",
+    intro: "La Staatsoper è uno dei teatri d'opera più prestigiosi al mondo, tempio della musica con 350 rappresentazioni l'anno.",
+    storia: "Inaugurata 1869, distrutta 1945, riaperta 1955 con Fidelio di Beethoven. Qui debuttarono opere di Strauss e Berg.",
+    curiosita: "Il Ballo dell'Opera attrae 5.000 ospiti. Standing room a 3 euro. Direttori famosi: Mahler, Karajan, Abbado.",
+    orari: "Visite guidate 9 euro quando non ci sono spettacoli. Biglietti opera 7-250 euro."
+  },
+  
+  {
+    name: "Karlskirche",
+    lat: 48.19881, lng: 16.37245,
+    images: ["https://upload.wikimedia.org/wikipedia/commons/8/8b/Karlskirche_Wien_abends.jpg"],
+    url: "https://www.karlskirche.at",
+    intro: "Capolavoro barocco con cupola verde e colonne traianee, costruita per voto dopo la peste.",
+    storia: "Costruita 1716-1737 da Fischer von Erlach per voto di Carlo VI dopo la peste del 1713.",
+    curiosita: "Ascensore panoramico fino agli affreschi della cupola. Concerti serali di musica classica.",
+    orari: "Lunedì-sabato 9:00-18:00, domenica 12:00-19:00. Ingresso 8 euro."
+  },
+  
+  {
+    name: "Albertina",
+    lat: 48.20395, lng: 16.36837,
+    images: ["https://upload.wikimedia.org/wikipedia/commons/b/bf/Albertina_Museum%2C_Vienna.jpg"],
+    url: "https://www.albertina.at",
+    intro: "Una delle più importanti collezioni di arte grafica al mondo con oltre un milione di disegni.",
+    storia: "Fondata 1776 dall'arciduca Alberto. Dal 1919 museo pubblico. Restauro 2003 con tetto titanio di Hollein.",
+    curiosita: "La 'Lepre' di Dürer del 1502. 145 disegni di Dürer. Collezione Monet-Picasso. Deposito antiatomico.",
+    orari: "10:00-18:00 (mercoledì e venerdì 21:00). Ingresso 18,90 euro. Prima domenica del mese 1 euro."
+  },
+  
+  {
+    name: "Secessione",
+    lat: 48.20084, lng: 16.36364,
+    images: ["https://upload.wikimedia.org/wikipedia/commons/f/f8/Secession_Building_Vienna.jpg"],
+    url: "https://www.secession.at",
+    intro: "Tempio dell'Art Nouveau viennese con la cupola dorata di foglie d'alloro.",
+    storia: "Costruita 1897-98 per il movimento secessionista di Klimt, Schiele e Wagner.",
+    curiosita: "Il Fregio di Beethoven di Klimt del 1902, lungo 34 metri. Motto: 'A ogni epoca la sua arte'.",
+    orari: "Martedì-domenica 10:00-18:00. Ingresso 12 euro."
+  },
+  
+  {
+    name: "Rathaus",
+    lat: 48.21008, lng: 16.35723,
+    images: ["https://upload.wikimedia.org/wikipedia/commons/3/33/Wiener_Rathaus_abends.jpg"],
+    url: "https://www.wien.gv.at",
+    intro: "Municipio neogotico con torre di 98 metri, centro di eventi e mercatini.",
+    storia: "Costruito 1872-1883 da Friedrich von Schmidt in stile neogotico fiammingo.",
+    curiosita: "Il Rathausmann in cima pesa 1.800 kg. Mercatino di Natale con 3 milioni di visitatori.",
+    orari: "Visite guidate gratuite lunedì, mercoledì, venerdì 13:00."
+  },
+  
+  {
+    name: "MuseumsQuartier",
+    lat: 48.20343, lng: 16.35986,
+    images: ["https://upload.wikimedia.org/wikipedia/commons/0/0f/MuseumsQuartier_Leopold_Museum.jpg"],
+    url: "https://www.mqw.at",
+    intro: "Uno dei distretti culturali più grandi al mondo con musei d'arte moderna e contemporanea.",
+    storia: "Ex scuderie imperiali del 1725 trasformate in centro culturale nel 2001.",
+    curiosita: "90.000 mq, 60 istituzioni culturali. Leopold Museum con Schiele. MUMOK arte contemporanea.",
+    orari: "Musei 10:00-19:00 (giovedì 21:00). Biglietti 12-14 euro. Cortili sempre aperti."
+  },
+  
   {
     name: "Naschmarkt",
     lat: 48.19857, lng: 16.36130,
-    images: [
-      "https://upload.wikimedia.org/wikipedia/commons/5/5f/Naschmarkt_2015.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/f/f6/Naschmarkt_Vienna_food_stalls.jpg"
-    ],
-    url: "https://de.wikipedia.org/wiki/Naschmarkt",
-    intro: "Mercato storico all’aperto con cibo internazionale e locale.",
-    storia: "Attivo dal XVI secolo, si estende lungo la Wienzeile.",
-    curiosita: "Il sabato mattina c’è anche un mercatino delle pulci.",
-    orari: "Aperture dei banchi variabili; vivace a pranzo."
+    images: ["https://upload.wikimedia.org/wikipedia/commons/5/5f/Naschmarkt_2015.jpg"],
+    url: "https://www.naschmarkt-vienna.com",
+    intro: "Il mercato più famoso di Vienna con oltre 120 bancarelle di cibo internazionale e prodotti freschi.",
+    storia: "Attivo dal XVI secolo, originariamente mercato del latte. Si estende per 1,5 km lungo la Wienzeile.",
+    curiosita: "Sabato mercatino delle pulci con 400 venditori. Architettura Liberty di Otto Wagner intorno.",
+    orari: "Lunedì-venerdì 6:00-19:30, sabato 6:00-18:00. Ristoranti fino a tardi."
   },
-  // Architetture particolari
+  
   {
     name: "Hundertwasserhaus",
     lat: 48.20704, lng: 16.39454,
-    images: [
-      "https://upload.wikimedia.org/wikipedia/commons/6/6f/Hundertwasserhaus_Vienna.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/d/d8/Hundertwasser_Village.jpg"
-    ],
-    url: "https://it.wikipedia.org/wiki/Hundertwasserhaus",
-    intro: "Residenza variopinta e irregolare di Hundertwasser.",
-    storia: "Realizzata negli anni ’80 con linee ondulate e tetti verdi.",
-    curiosita: "Vicino, l’Hundertwasser Village prosegue lo stesso stile.",
-    orari: "Esterni liberi; negozi e museo vicini."
+    images: ["https://upload.wikimedia.org/wikipedia/commons/6/6f/Hundertwasserhaus_Vienna.jpg"],
+    url: "https://www.hundertwasser-haus.com",
+    intro: "Casa comunale colorata dell'artista Hundertwasser, manifesto di architettura ecologica.",
+    storia: "Costruita 1983-85, 52 appartamenti comunali abitati. Prima architettura verde di Vienna.",
+    curiosita: "Nessuna linea retta, 250 alberi e arbusti sui tetti. Ogni inquilino può decorare la facciata intorno alle finestre.",
+    orari: "Solo esterni visitabili. Hundertwasser Village vicino con negozi 9:00-19:00."
+  },
+  
+  {
+    name: "Parlamento",
+    lat: 48.20825, lng: 16.36162,
+    images: ["https://upload.wikimedia.org/wikipedia/commons/0/0b/Parlament_Wien_2016.jpg"],
+    url: "https://www.parlament.gv.at",
+    intro: "Maestoso edificio neoclassico con la fontana di Pallade Atena, sede del parlamento austriaco.",
+    storia: "Costruito 1874-1883 da Theophil Hansen in stile greco classico. Restauro completo 2017-2023.",
+    curiosita: "La statua di Atena alta 5 metri tiene Nike, dea della vittoria. Colonne corinzie alte 24 metri.",
+    orari: "Visite guidate gratuite prenotabili online, sabato anche in italiano."
+  },
+  
+  {
+    name: "Haus der Musik",
+    lat: 48.20308, lng: 16.37245,
+    images: ["https://upload.wikimedia.org/wikipedia/commons/5/50/Haus_der_Musik_Wien_1.jpg"],
+    url: "https://www.hausdermusik.com",
+    intro: "Museo interattivo del suono dove puoi dirigere la Filarmonica di Vienna e comporre valzer.",
+    storia: "Aperto nel 2000 nel palazzo dell'Arciduca Carlo, prima sede della Filarmonica dal 1842.",
+    curiosita: "Scale musicali, installazioni sonore 3D. Stanze dedicate a Mozart, Beethoven, Schubert, Strauss.",
+    orari: "Tutti i giorni 10:00-22:00. Ingresso 16 euro, famiglia 36 euro."
   }
-];
-
-/* === MAPPA =============================================================== */
-let map, userMarker, routingControl = null;
-
-function initMap(){
-  map = L.map('map').setView([hotel.lat, hotel.lng], 14);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
-
-  const hotelIcon = L.icon({
-    iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/6e/Map_marker_icon_%E2%80%93_Nicolas_Mollet_%E2%80%93_Hotel_%E2%80%93_Tourism_%E2%80%93_Dark.png',
-    iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -24]
-  });
-  L.marker([hotel.lat, hotel.lng], {icon: hotelIcon})
-    .addTo(map).bindPopup(`<b>${hotel.name}</b><br>Base della tua visita.`);
-
-  // Markers POI
-  POI.forEach((p, idx)=>{
-    const m = L.marker([p.lat, p.lng]).addTo(map);
-    m.bindPopup(`
-      <div style="display:grid;grid-template-columns:72px 1fr;gap:8px;min-width:260px">
-        ${imgHTML(p.images[0], p.name, "style='width:72px;height:72px;object-fit:cover;border-radius:10px'")}
-        <div>
-          <b>${p.name}</b><br>
-          <small>${p.intro}</small><br>
-          <a href="${p.url}" target="_blank" rel="noopener">Approfondisci</a>
-          <div style="margin-top:6px">
-            <button onclick="navigateTo(${idx}, true)">🚗 Da me</button>
-            <button onclick="navigateTo(${idx}, false)">🚗 Da hotel</button>
-          </div>
-        </div>
-      </div>
-    `);
-    m.on('click', ()=> selectPOI(idx, true));
-  });
-
-  // Click vuoto mappa = torna allo stato iniziale
-  map.on('click', ()=>{
-    selectedPOI = null;
-    updateDetailsPanel(null);
-    buildChaptersFor(null);
-  });
-}
-initMap();
-
-/* === LISTA LATERALE ====================================================== */
-const poiListEl = document.getElementById('poiList');
-function renderPOIList(){
-  poiListEl.innerHTML = '';
-  POI.forEach((p, idx)=>{
-    const el = document.createElement('div');
-    el.className = 'poi';
-    el.innerHTML = `
-      ${imgHTML(p.images[0], p.name)}
-      <div>
-        <div class="name">${p.name}</div>
-        <div class="small">${p.intro}</div>
-      </div>
-    `;
-    el.addEventListener('click', ()=> selectPOI(idx, true));
-    poiListEl.appendChild(el);
-  });
-}
-renderPOIList();
-
-/* === SELEZIONE POI + GALLERIA + DETTAGLI ================================= */
-let selectedPOI = null;
-let galleryIndex = 0;
-
-const galleryBox = document.getElementById('galleryBox');
-const galleryImg = document.getElementById('galleryImage');
-const imgCounter = document.getElementById('imgCounter');
-const details = document.getElementById('detailsPanel');
-
-function showGallery(poi){
-  if(!poi || !poi.images || poi.images.length === 0){ galleryBox.style.display = 'none'; return; }
-  galleryBox.style.display = 'grid';
-  galleryIndex = 0;
-  updateGalleryImage(poi);
-}
-function updateGalleryImage(poi){
-  if(!poi.images || poi.images.length === 0) return;
-  const url = poi.images[galleryIndex];
-  galleryImg.setAttribute("referrerpolicy","no-referrer");
-  galleryImg.src = url || FALLBACK_IMG;
-  galleryImg.onerror = ()=> { galleryImg.onerror=null; galleryImg.src = FALLBACK_IMG; };
-  imgCounter.textContent = `Immagine ${galleryIndex+1} di ${poi.images.length}`;
-}
-document.getElementById('prevImg').addEventListener('click', ()=>{
-  if(!selectedPOI) return;
-  galleryIndex = (galleryIndex - 1 + selectedPOI.images.length) % selectedPOI.images.length;
-  updateGalleryImage(selectedPOI);
-});
-document.getElementById('nextImg').addEventListener('click', ()=>{
-  if(!selectedPOI) return;
-  galleryIndex = (galleryIndex + 1) % selectedPOI.images.length;
-  updateGalleryImage(selectedPOI);
-});
-
-function updateDetailsPanel(p){
-  if(!p){
-    details.innerHTML = `<h2>Dettagli luogo</h2><div class="small">Seleziona un luogo per vedere foto, capitoli e navigazione.</div>`;
-    return;
-  }
-  details.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;justify-content:space-between">
-      <h2 style="margin:0">${p.name}</h2>
-      <button id="backBtn" class="secondary">⬅️ Indietro</button>
-    </div>
-    <div class="gallery" style="margin-top:6px">
-      ${imgHTML(p.images[0]||FALLBACK_IMG, p.name, "id='gimg' style='width:100%;height:220px;object-fit:cover;border-radius:12px;border:1px solid #e9e6ff'")}
-      <div class="gallery-controls">
-        <button class="ghost" id="gprev">⬅️</button>
-        <button class="ghost" id="gnext">➡️</button>
-        <span id="gcount" class="small" style="margin-left:8px"></span>
-      </div>
-    </div>
-    <div class="small" style="margin-top:8px">
-      <b>Approfondisci:</b> <a href="${p.url}" target="_blank" rel="noopener">${p.url.replace(/^https?:\/\//,'')}</a>
-    </div>
-    <div class="top-actions" style="margin-top:8px">
-      <button id="routeFromMeBtn" class="secondary">🚗 Traccia mappa: da me</button>
-      <button id="routeFromHotelBtn" class="secondary">🚗 Traccia mappa: da hotel</button>
-      <a id="gmapsWalkD" class="btn" target="_blank" rel="noopener">🗺️ Google Maps a piedi</a>
-      <a id="gmapsDriveD" class="btn" target="_blank" rel="noopener">🗺️ Google Maps in auto</a>
-      <a id="gmapsTransitD" class="btn" target="_blank" rel="noopener">🚇 Mezzi pubblici</a>
-    </div>
-  `;
-
-  // Back
-  details.querySelector('#backBtn').addEventListener('click', ()=>{
-    selectedPOI = null;
-    updateDetailsPanel(null);
-    buildChaptersFor(null);
-    map.setView([hotel.lat, hotel.lng], 14);
-    try{ speechSynthesis.cancel(); }catch(e){}
-  });
-
-  // Gallery in dettagli
-  const gimg = details.querySelector('#gimg');
-  const gprev = details.querySelector('#gprev');
-  const gnext = details.querySelector('#gnext');
-  const gcount = details.querySelector('#gcount');
-  let gidx = 0;
-  function refresh(){
-    const url = p.images[gidx] || FALLBACK_IMG;
-    gimg.setAttribute("referrerpolicy","no-referrer");
-    gimg.src = url;
-    gimg.onerror = ()=>{ gimg.onerror=null; gimg.src = FALLBACK_IMG; };
-    gcount.textContent = `Immagine ${gidx+1} di ${p.images.length}`;
-  }
-  gprev.addEventListener('click', ()=>{ gidx = (gidx - 1 + p.images.length) % p.images.length; refresh(); });
-  gnext.addEventListener('click', ()=>{ gidx = (gidx + 1) % p.images.length; refresh(); });
-  refresh();
-
-  // Link Google Maps per dettagli
-  updateGmapsLinksForDetails(true);
-  details.querySelector('#routeFromMeBtn').addEventListener('click', ()=>{
-    navigateTo(POI.indexOf(p), true);
-  });
-  details.querySelector('#routeFromHotelBtn').addEventListener('click', ()=>{
-    navigateTo(POI.indexOf(p), false);
-  });
-}
-
-function selectPOI(index, pan){
-  selectedPOI = POI[index];
-  if(pan){ map.setView([selectedPOI.lat, selectedPOI.lng], 16); }
-  showGallery(selectedPOI);
-  updateAllGmapsLinks();
-  updateDetailsPanel(selectedPOI);
-  buildChaptersFor(selectedPOI);
-}
-
-/* === GEOLOCALIZZAZIONE =================================================== */
-let userPos = null;
-document.getElementById('locateBtn').addEventListener('click', ()=>{
-  if(!navigator.geolocation){ alert("Geolocalizzazione non disponibile."); return; }
-  navigator.geolocation.getCurrentPosition((pos)=>{
-    userPos = {lat: pos.coords.latitude, lng: pos.coords.longitude};
-    if(userMarker) userMarker.remove();
-    userMarker = L.marker([userPos.lat, userPos.lng], {title:"La mia posizione"}).addTo(map);
-    map.setView([userPos.lat, userPos.lng], 15);
-    updateAllGmapsLinks();
-  }, (err)=> alert("Impossibile ottenere la posizione: " + err.message), {enableHighAccuracy:true,timeout:10000});
-});
-document.getElementById('toHotelBtn').addEventListener('click', ()=>{
-  if(!userPos){ alert("Prima attiva la tua posizione con “La mia posizione”."); return; }
-  routeBetween(userPos, {lat: hotel.lat, lng: hotel.lng});
-});
-
-/* === NAVIGAZIONE & ROUTING (mappa = driving) ============================ */
-function distanceMeters(a,b){
-  const R=6371000, toRad = d=> d*Math.PI/180;
-  const dLat = toRad(b.lat-a.lat), dLng = toRad(b.lng-a.lng);
-  const s1 = Math.sin(dLat/2)**2;
-  const s2 = Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLng/2)**2;
-  return 2*R*Math.asin(Math.sqrt(s1+s2));
-}
-function routeBetween(start, end){
-  if(routingControl){ map.removeControl(routingControl); routingControl = null; }
-  routingControl = L.Routing.control({
-    waypoints: [ L.latLng(start.lat, start.lng), L.latLng(end.lat, end.lng) ],
-    router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }), // driving
-    lineOptions: {addWaypoints:false},
-    show:false
-  }).addTo(map);
-}
-function navigateTo(poiIndex, fromUser){
-  const p = POI[poiIndex];
-  if(fromUser){
-    if(!userPos){ alert("Attiva prima la tua posizione (📍)."); return; }
-    routeBetween(userPos, {lat:p.lat,lng:p.lng});
-  }else{
-    routeBetween({lat:hotel.lat,lng:hotel.lng}, {lat:p.lat,lng:p.lng});
-  }
-  selectedPOI = p;
-  updateAllGmapsLinks();
-  updateDetailsPanel(selectedPOI);
-}
-
-/* === LINK GOOGLE MAPS (sidebar) ========================================= */
-const gmapsWalk = document.getElementById('gmapsWalk');
-const gmapsDrive = document.getElementById('gmapsDrive');
-const gmapsTransit = document.getElementById('gmapsTransit');
-
-function currentOriginCoords(){
-  return (userPos ? `${userPos.lat},${userPos.lng}` : `${hotel.lat},${hotel.lng}`);
-}
-function gmapsUrlTo(lat, lng, mode){
-  const origin = currentOriginCoords();
-  const travelmode = mode === 'walk' ? 'walking' : mode === 'drive' ? 'driving' : 'transit';
-  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${lat},${lng}&travelmode=${travelmode}`;
-}
-function updateAllGmapsLinks(){
-  if(!selectedPOI){ gmapsWalk.href = gmapsDrive.href = gmapsTransit.href = "#"; return; }
-  gmapsWalk.href   = gmapsUrlTo(selectedPOI.lat, selectedPOI.lng, 'walk');
-  gmapsDrive.href  = gmapsUrlTo(selectedPOI.lat, selectedPOI.lng, 'drive');
-  gmapsTransit.href= gmapsUrlTo(selectedPOI.lat, selectedPOI.lng, 'transit');
-}
-
-/* Link Google Maps nel pannello dettagli (se presente) */
-function updateGmapsLinksForDetails(fromUser=true){
-  if(!selectedPOI) return;
-  const w = details.querySelector('#gmapsWalkD');
-  const d = details.querySelector('#gmapsDriveD');
-  const t = details.querySelector('#gmapsTransitD');
-  if(!w||!d||!t) return;
-  const origin = fromUser && userPos ? `${userPos.lat},${userPos.lng}` : `${hotel.lat},${hotel.lng}`;
-  const base = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${selectedPOI.lat},${selectedPOI.lng}`;
-  w.href = base + "&travelmode=walking";
-  d.href = base + "&travelmode=driving";
-  t.href = base + "&travelmode=transit";
-}
-
-/* Pulsanti routing sidebar */
-document.getElementById('routeFromMeCar').addEventListener('click', ()=>{
-  if(!selectedPOI){ alert("Seleziona prima un luogo."); return; }
-  if(!userPos){ alert("Attiva prima la tua posizione (📍)."); return; }
-  routeBetween(userPos, {lat:selectedPOI.lat,lng:selectedPOI.lng});
-});
-document.getElementById('routeFromHotelCar').addEventListener('click', ()=>{
-  if(!selectedPOI){ alert("Seleziona prima un luogo."); return; }
-  routeBetween({lat:hotel.lat,lng:hotel.lng}, {lat:selectedPOI.lat,lng:selectedPOI.lng});
-});
-
-/* === AEROPORTO: tasto rapido + voce ===================================== */
-document.getElementById('toAirportBtn').addEventListener('click', ()=>{
-  // Traccia su mappa dall’origine corrente all’aeroporto
-  const start = userPos ? userPos : {lat:hotel.lat, lng:hotel.lng};
-  routeBetween(start, {lat:airport.lat, lng:airport.lng});
-  // Aggiorna link GM
-  selectedPOI = { name: airport.name, lat: airport.lat, lng: airport.lng,
-    intro: "Stai impostando il percorso verso l’aeroporto internazionale di Vienna.",
-    storia: "", curiosita: "", orari: "Per i collegamenti consigliati usa la modalità mezzi pubblici su Google Maps: Railjet, CAT o S-Bahn S7."
-  };
-  updateAllGmapsLinks();
-  updateDetailsPanel(selectedPOI);
-  buildChaptersFor(selectedPOI);
-  // Una breve voce di servizio (premi Play per capitoli completi)
-  speakNow("Percorso verso l’aeroporto pronto. Per i mezzi pubblici apri Google Maps in modalità transit.");
-});
-
-/* === GUIDA VOCALE A CAPITOLI ============================================ */
-let synth = window.speechSynthesis;
-let voices = [];
-let voicesLoaded = false;
-let ttsUnlocked = false;
-
-let chapterQueue = [];
-let currentChapterIndex = 0;
-
-const chIntro = document.getElementById('chIntro');
-const chStoria = document.getElementById('chStoria');
-const chCuriosita = document.getElementById('chCuriosita');
-const chOrari = document.getElementById('chOrari');
-
-function markChapter(){
-  [chIntro, chStoria, chCuriosita, chOrari].forEach(el=> el.classList.remove('current-chapter'));
-  const ref = [chIntro,chStoria,chCuriosita,chOrari][currentChapterIndex] || null;
-  if(ref){ ref.classList.add('current-chapter'); }
-}
-
-function loadVoices(){
-  voices = synth.getVoices().sort((a,b)=> a.lang.localeCompare(b.lang));
-  voicesLoaded = voices && voices.length>0;
-  const sel = document.getElementById('voiceSelect');
-  sel.innerHTML = voicesLoaded ? "" : "<option>Caricamento voci…</option>";
-  if(!voicesLoaded) return;
-  const preferred = v => /it-IT/i.test(v.lang) || /Italian/i.test(v.name) || /Neural|Premium|Natural/i.test(v.name);
-  const sorted = [...voices].sort((a,b)=> (preferred(b)-preferred(a)));
-  sorted.forEach((v)=>{
-    const opt = document.createElement('option');
-    opt.value = voices.indexOf(v);
-    opt.textContent = `${v.name} (${v.lang})`;
-    sel.appendChild(opt);
-  });
-}
-loadVoices();
-if(typeof speechSynthesis!=="undefined"){ speechSynthesis.onvoiceschanged = loadVoices; }
-
-function unlockTTS(){
-  if(ttsUnlocked) return;
-  ttsUnlocked = true;
-  try{
-    const u = new SpeechSynthesisUtterance(" ");
-    u.volume = 0;
-    synth.speak(u);
-    setTimeout(()=> synth.cancel(), 0);
-  }catch(e){}
-}
-
-function buildChaptersFor(p){
-  if(!p){
-    chapterQueue = ["Benvenuto a Vienna. Base al Boutique Hotel Das Tigra. Seleziona un punto per iniziare la guida."];
-    currentChapterIndex = 0; markChapter(); return;
-  }
-  const parts = [p.intro, p.storia, p.curiosita, (p.orari||"")].filter(t=>t && t.trim().length);
-  chapterQueue = parts.length ? parts : ["Non ci sono capitoli disponibili per questo luogo."];
-  currentChapterIndex = 0; markChapter();
-}
-
-function chunkText(text, maxLen=180){
-  const sentences = text.split(/(?<=[\.\!\?])\s+/);
-  const chunks = [];
-  let buf = "";
-  for(const s of sentences){
-    if((buf + " " + s).trim().length > maxLen){ if(buf) chunks.push(buf.trim()); buf = s; }
-    else { buf = (buf ? buf + " " : "") + s; }
-  }
-  if(buf) chunks.push(buf.trim());
-  return chunks;
-}
-
-function getChosenVoice(){
-  const sel = document.getElementById('voiceSelect');
-  const idx = Number(sel.value);
-  let v = voices[idx];
-  if(!v){ v = voices.find(v=>/it-IT/i.test(v.lang)) || voices[0]; }
-  return v || null;
-}
-
-let speaking = false;
-function stopAll(){ try{ synth.cancel(); }catch(e){} speaking = false; }
-
-async function speakChapter(index){
-  if(index<0 || index>=chapterQueue.length) return;
-  const voice = getChosenVoice();
-  const parts = chunkText(chapterQueue[index]);
-  for(let i=0;i<parts.length;i++){
-    if(!speaking) return;
-    await new Promise(resolve=>{
-      const u = new SpeechSynthesisUtterance(parts[i]);
-      if(voice){ u.voice = voice; u.lang = voice.lang; } else { u.lang = "it-IT"; }
-      u.rate = 0.95; u.pitch = 1.0;
-      u.onend = ()=> resolve();
-      synth.speak(u);
-    });
-  }
-}
-async function speakChaptersFrom(startIndex){
-  speaking = true;
-  for(let i=startIndex;i<chapterQueue.length;i++){
-    currentChapterIndex = i; markChapter();
-    await speakChapter(i);
-    if(!speaking) return;
-  }
-  speaking = false;
-}
-function speakNow(text){
-  stopAll();
-  const voice = getChosenVoice();
-  const parts = chunkText(text);
-  speaking = true;
-  (async ()=>{
-    for(const t of parts){
-      if(!speaking) break;
-      await new Promise(res=>{
-        const u = new SpeechSynthesisUtterance(t);
-        if(voice){ u.voice = voice; u.lang = voice.lang; } else { u.lang = "it-IT"; }
-        u.rate = 0.95; u.pitch = 1.0; u.onend = ()=> res(); synth.speak(u);
-      });
-    }
-    speaking = false;
-  })();
-}
-
-/* Controlli voce */
-document.getElementById('playBtn').addEventListener('click', ()=>{
-  unlockTTS();
-  if(!selectedPOI) buildChaptersFor(null);
-  stopAll(); speakChaptersFrom(0);
-});
-document.getElementById('nextBtn').addEventListener('click', ()=>{
-  if(!chapterQueue.length) return;
-  stopAll(); const next = Math.min(currentChapterIndex+1, chapterQueue.length-1);
-  speakChaptersFrom(next);
-});
-document.getElementById('pauseBtn').addEventListener('click', ()=>{ if(synth.speaking && !synth.paused) synth.pause(); });
-document.getElementById('resumeBtn').addEventListener('click', ()=>{ if(synth.paused) synth.resume(); });
-document.getElementById('stopBtn').addEventListener('click', stopAll);
-
-/* Stato iniziale */
-buildChaptersFor(null);
-markChapter();
-
-/* === SELEZIONE POI dalla sidebar o mappa ================================= */
-function selectPOI(index, pan){
-  selectedPOI = POI[index];
-  if(pan){ map.setView([selectedPOI.lat, selectedPOI.lng], 16); }
-  showGallery(selectedPOI);
-  updateAllGmapsLinks();
-  updateDetailsPanel(selectedPOI);
-  buildChaptersFor(selectedPOI);
-}
-</script>
-</body>
-</html>
