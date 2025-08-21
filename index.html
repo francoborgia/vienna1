@@ -49,6 +49,7 @@
   .chapter{display:inline-block;padding:2px 8px;border-radius:999px;background:#efeaff;color:#5b3fa5;font-size:.75rem;margin-right:6px}
   .current-chapter{font-weight:600}
 
+  .top-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   @media (max-width: 980px){ .layout{grid-template-columns:1fr;} #map{height:58vh} .poi-list{max-height:28vh} }
 </style>
 </head>
@@ -60,6 +61,7 @@
       <div class="controls">
         <button id="locateBtn" class="secondary" title="Usa la mia posizione">📍 La mia posizione</button>
         <button id="toHotelBtn" title="Naviga verso l’hotel">🏨 Torna all’hotel</button>
+        <button id="toAirportBtn" title="Vai all’aeroporto">✈️ Vai all’aeroporto</button>
       </div>
     </header>
 
@@ -103,13 +105,16 @@
           <div id="poiList" class="poi-list"></div>
         </div>
 
+        <div class="panel" id="detailsPanel">
+          <h2>Dettagli luogo</h2>
+          <div class="small">Seleziona un luogo dalla lista o dalla mappa per vedere foto, capitoli e navigazione.</div>
+        </div>
+
         <div class="panel">
           <h2>Navigazione rapida</h2>
-          <div class="small">Scegli un luogo e avvia il percorso: a piedi (≤ 500 m), auto su mappa, o mezzi pubblici su Google Maps.</div>
-          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-            <button id="routeFromMeFoot" class="secondary">🚶 Da me</button>
+          <div class="small">Scegli un luogo e avvia il percorso: su mappa (auto) o apri Google Maps per piedi/auto/mezzi.</div>
+          <div class="top-actions">
             <button id="routeFromMeCar" class="secondary">🚗 Da me</button>
-            <button id="routeFromHotelFoot" class="secondary">🚶 Da hotel</button>
             <button id="routeFromHotelCar" class="secondary">🚗 Da hotel</button>
             <a id="gmapsWalk" class="btn" target="_blank" rel="noopener">🗺️ Google Maps a piedi</a>
             <a id="gmapsDrive" class="btn" target="_blank" rel="noopener">🗺️ Google Maps in auto</a>
@@ -128,10 +133,20 @@
 <script>
 /* === CONFIG DI BASE ====================================================== */
 const hotel = { name: "Boutique Hotel Das Tigra", lat: 48.21142, lng: 16.37058 };
+const airport = { name: "Vienna International Airport (VIE)", lat: 48.1103, lng: 16.5697 };
+
 const FALLBACK_IMG = "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='640' height='360'><rect width='100%' height='100%' fill='#eee'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='18' fill='#666'>Foto</text></svg>`);
 
-/* POI con capitoli e galleria */
+/* Utility immagine con referrer policy + fallback */
+function imgHTML(src, alt, extra=""){
+  const safe = src || FALLBACK_IMG;
+  return `<img loading="lazy" referrerpolicy="no-referrer" src="${safe}"
+           alt="${alt}" onerror="this.onerror=null;this.src='${FALLBACK_IMG}'" ${extra}>`;
+}
+
+/* POI con capitoli e galleria (lista ampliata per professionalità) */
 const POI = [
+  // Centro storico
   {
     name: "Stephansdom (Cattedrale di Santo Stefano)",
     lat: 48.20849, lng: 16.37312,
@@ -142,23 +157,9 @@ const POI = [
     ],
     url: "https://it.wikipedia.org/wiki/Cattedrale_di_Santo_Stefano_(Vienna)",
     intro: "La Cattedrale di Santo Stefano è il simbolo religioso di Vienna, famosa per il tetto di tegole policrome e la guglia sud.",
-    storia: "Le origini risalgono al XII secolo, con ampliamenti gotici nei secoli successivi. La forma attuale è frutto di ricostruzioni e restauri, soprattutto dopo i danni della Seconda Guerra Mondiale.",
-    curiosita: "La guglia sud supera i 136 metri; dal campanile è visibile gran parte del centro storico. Nella cripta riposano importanti esponenti asburgici.",
-    orari: "Navata visitabile gratuitamente; torri, catacombe e tesoro a pagamento. Orari variabili in base alle funzioni religiose."
-  },
-  {
-    name: "Schönbrunn (Palazzo e Giardini)",
-    lat: 48.18452, lng: 16.31218,
-    images: [
-      "https://upload.wikimedia.org/wikipedia/commons/6/6b/Schloss_Sch%C3%B6nbrunn_Wien_2014_%282%29.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/2/2e/Gloriette_Sch%C3%B6nbrunn.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/3/3c/Sch%C3%B6nbrunn_gardens_2014.jpg"
-    ],
-    url: "https://it.wikipedia.org/wiki/Palazzo_di_Sch%C3%B6nbrunn",
-    intro: "Il Palazzo di Schönbrunn fu la residenza estiva degli Asburgo ed è uno dei siti più visitati d’Austria.",
-    storia: "Il complesso barocco, con oltre mille stanze, ha ospitato Maria Teresa e Francesco Giuseppe. Dal 1996 è Patrimonio Mondiale UNESCO.",
-    curiosita: "Nel parco si trovano la Gloriette con vista scenografica e lo zoo di Vienna, considerato il più antico ancora in attività.",
-    orari: "Museo a pagamento con diversi percorsi; giardini in gran parte gratuiti. Orari stagionali."
+    storia: "Le origini risalgono al XII secolo; ampliamenti gotici e restauri moderni ne hanno definito l’aspetto attuale.",
+    curiosita: "La guglia sud supera i 136 metri; dalla torre si domina il centro storico.",
+    orari: "Navata gratuita; torri, catacombe e tesoro a pagamento."
   },
   {
     name: "Hofburg (Palazzo Imperiale)",
@@ -168,11 +169,90 @@ const POI = [
       "https://upload.wikimedia.org/wikipedia/commons/2/2a/Nationalbibliothek_Reading_Room.jpg"
     ],
     url: "https://it.wikipedia.org/wiki/Hofburg",
-    intro: "L’Hofburg è l’antica residenza imperiale nel cuore di Vienna, oggi complesso di musei e istituzioni.",
-    storia: "Sorto dal XIII secolo e ampliato nei secoli, ha ospitato gli Asburgo fino al 1918; oggi include anche la Biblioteca Nazionale Austriaca.",
-    curiosita: "Comprende gli Appartamenti Imperiali e il Museo di Sisi, con oggetti personali dell’imperatrice.",
-    orari: "Musei a pagamento; corti esterne accessibili liberamente in molti orari."
+    intro: "L’Hofburg è l’antica residenza imperiale nel cuore di Vienna.",
+    storia: "Dal XIII secolo si è espansa fino alla Neue Burg; oggi ospita musei e istituzioni statali.",
+    curiosita: "Include gli Appartamenti Imperiali, il Museo di Sisi e la Biblioteca Nazionale.",
+    orari: "Musei a pagamento; corti esterne libere."
   },
+  {
+    name: "Albertina",
+    lat: 48.20395, lng: 16.36837,
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/b/bf/Albertina_Museum%2C_Vienna.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/8/8b/Albertina_entrance_Vienna.jpg"
+    ],
+    url: "https://it.wikipedia.org/wiki/Albertina",
+    intro: "L’Albertina custodisce una delle più grandi raccolte di grafica al mondo.",
+    storia: "Fondata nel 1776 dall’arciduca Alberto di Sassonia-Teschen, ampliata nei secoli.",
+    curiosita: "Celebre per i fogli di Dürer e gli impressionisti.",
+    orari: "Museo a pagamento; orari variabili."
+  },
+  {
+    name: "Staatsoper (Opera di Stato)",
+    lat: 48.20276, lng: 16.36947,
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/9/99/Vienna_State_Opera_2019.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/1/1c/Staatsoper_interior_Vienna.jpg"
+    ],
+    url: "https://it.wikipedia.org/wiki/Opera_di_Stato_di_Vienna",
+    intro: "La Staatsoper è tra i teatri d’opera più prestigiosi.",
+    storia: "Inaugurata nel 1869; ricostruita dopo la guerra e riaperta nel 1955.",
+    curiosita: "Famoso il ballo dell’opera; stagione con cast di livello mondiale.",
+    orari: "Visite guidate a pagamento quando non ci sono spettacoli."
+  },
+  {
+    name: "Karlskirche (Chiesa di San Carlo)",
+    lat: 48.19881, lng: 16.37245,
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/8/8b/Karlskirche_Wien_abends.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/4/49/Karlskirche_Interior_Vienna.jpg"
+    ],
+    url: "https://it.wikipedia.org/wiki/Chiesa_di_San_Carlo_Borromeo_(Vienna)",
+    intro: "Capolavoro barocco con grande cupola verde e colonne ispirate a Traiano.",
+    storia: "Costruita nel XVIII secolo per voto dell’imperatore Carlo VI.",
+    curiosita: "Ascensore interno per avvicinarsi agli affreschi della cupola.",
+    orari: "Ingresso a pagamento; orari variabili."
+  },
+  {
+    name: "Secessione di Vienna",
+    lat: 48.20084, lng: 16.36364,
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/f/f8/Secession_Building_Vienna.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/4/44/Beethovenfries_klimt.jpg"
+    ],
+    url: "https://it.wikipedia.org/wiki/Secessione_di_Vienna_(edificio)",
+    intro: "Edificio simbolo dell’Art Nouveau viennese, noto per la cupola dorata.",
+    storia: "Sede dell’omonimo movimento artistico fondato nel 1897.",
+    curiosita: "Conserva il celebre Fregio di Beethoven di Gustav Klimt.",
+    orari: "Mostre a pagamento; orari espositivi."
+  },
+  {
+    name: "Rathaus (Municipio)",
+    lat: 48.21008, lng: 16.35723,
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/3/33/Wiener_Rathaus_abends.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/5/59/Rathausplatz_Wien_Sommer.jpg"
+    ],
+    url: "https://it.wikipedia.org/wiki/Municipio_di_Vienna",
+    intro: "Municipio neogotico affacciato su Rathausplatz, teatro di eventi e mercatini.",
+    storia: "Costruito tra 1872 e 1883 su progetto di Friedrich von Schmidt.",
+    curiosita: "La torre centrale è sormontata dal Rathausmann.",
+    orari: "Visite e eventi con orari variabili."
+  },
+  {
+    name: "Parlamento Austriaco",
+    lat: 48.20825, lng: 16.36162,
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/0/0b/Parlament_Wien_2016.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/0/0e/Pallas_Athene_fountain_Vienna.jpg"
+    ],
+    url: "https://it.wikipedia.org/wiki/Parlamento_austriaco",
+    intro: "Imponente edificio neoclassico con la fontana di Pallade Atena.",
+    storia: "Progettato da Theophil Hansen e inaugurato nel 1883.",
+    curiosita: "Interni con aule moderne dopo recente restauro.",
+    orari: "Visite guidate a pagamento; verifica calendario."
+  },
+  // Musei/arte
   {
     name: "Belvedere (Il Bacio di Klimt)",
     lat: 48.19136, lng: 16.38087,
@@ -182,10 +262,10 @@ const POI = [
       "https://upload.wikimedia.org/wikipedia/commons/2/2a/Belvedere_Gardens_Vienna.jpg"
     ],
     url: "https://www.belvedere.at/it",
-    intro: "Il complesso del Belvedere ospita importanti collezioni d’arte austriaca tra cui il celebre ‘Bacio’ di Gustav Klimt.",
-    storia: "Costruito come residenza del Principe Eugenio di Savoia, è un insieme barocco con Belvedere Superiore e Inferiore.",
-    curiosita: "Il dipinto ‘Il Bacio’ (1907–1908) è tra le opere più amate del periodo aureo di Klimt.",
-    orari: "Museo a pagamento; giardini parzialmente liberi con orari stagionali."
+    intro: "Complesso barocco con collezioni d’arte austriaca e ‘Il Bacio’ di Klimt.",
+    storia: "Residenza del Principe Eugenio, composto da Superiore e Inferiore.",
+    curiosita: "Il dipinto aureo di Klimt è icona del museo.",
+    orari: "Museo a pagamento; giardini in parte liberi."
   },
   {
     name: "MuseumsQuartier",
@@ -195,10 +275,38 @@ const POI = [
       "https://upload.wikimedia.org/wikipedia/commons/8/8d/Mumok_Museum%2C_Vienna_%282815456824%29.jpg"
     ],
     url: "https://www.mqw.at/",
-    intro: "Il MuseumsQuartier è un grande distretto culturale con musei, spazi espositivi e aree per eventi.",
-    storia: "Ricavato dagli ex scuderie imperiali, oggi ospita il Leopold Museum e il mumok, tra gli altri.",
-    curiosita: "Le corti interne sono popolari in estate per installazioni, relax e iniziative creative.",
-    orari: "Orari variabili per i singoli musei; spazi esterni liberi."
+    intro: "Grande distretto culturale con Leopold Museum e mumok.",
+    storia: "Nato dalla riqualificazione delle ex scuderie imperiali.",
+    curiosita: "Corti animate con eventi e installazioni.",
+    orari: "Musei a pagamento; spazi esterni liberi."
+  },
+  {
+    name: "Haus der Musik (Casa della Musica)",
+    lat: 48.20308, lng: 16.37245,
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/5/50/Haus_der_Musik_Wien_1.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/5/5d/Haus_der_Musik_Vienna_Exhibit.jpg"
+    ],
+    url: "https://www.hausdermusik.com/en/",
+    intro: "Museo interattivo dedicato al suono e ai grandi compositori.",
+    storia: "Aperto nel 2000 in un palazzo storico del centro.",
+    curiosita: "Orchestra virtuale e installazioni sonore.",
+    orari: "Biglietto a pagamento; orari serali estesi."
+  },
+  // Parchi e svago
+  {
+    name: "Schönbrunn (Palazzo e Giardini)",
+    lat: 48.18452, lng: 16.31218,
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/6/6b/Schloss_Sch%C3%B6nbrunn_Wien_2014_%282%29.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/2/2e/Gloriette_Sch%C3%B6nbrunn.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/3/3c/Sch%C3%B6nbrunn_gardens_2014.jpg"
+    ],
+    url: "https://it.wikipedia.org/wiki/Palazzo_di_Sch%C3%B6nbrunn",
+    intro: "Residenza estiva degli Asburgo e sito UNESCO.",
+    storia: "Barocco con oltre mille stanze; giardini storici e zoo del 1752.",
+    curiosita: "Gloriette con vista scenografica sulla città.",
+    orari: "Museo a pagamento; giardini in gran parte gratuiti."
   },
   {
     name: "Prater e Ruota panoramica",
@@ -208,11 +316,25 @@ const POI = [
       "https://upload.wikimedia.org/wikipedia/commons/7/70/Wurstelprater_entrance.jpg"
     ],
     url: "https://it.wikipedia.org/wiki/Ruota_panoramica_di_Vienna",
-    intro: "Il Prater è un grande parco urbano con aree verdi e un luna park storico.",
-    storia: "La ruota panoramica, simbolo del parco, fu inaugurata nel 1897 e offre viste sulla città.",
-    curiosita: "Ottimo per passeggiate e attrazioni per famiglie; di sera l’area è molto animata.",
-    orari: "Ingresso al parco libero; singole attrazioni a pagamento con orari propri."
+    intro: "Grande parco urbano con lunapark storico.",
+    storia: "Aperto al pubblico nel XVIII secolo; ruota del 1897.",
+    curiosita: "Vista dall’alto e atmosfera serale vivace.",
+    orari: "Parco libero; attrazioni a pagamento."
   },
+  {
+    name: "Naschmarkt",
+    lat: 48.19857, lng: 16.36130,
+    images: [
+      "https://upload.wikimedia.org/wikipedia/commons/5/5f/Naschmarkt_2015.jpg",
+      "https://upload.wikimedia.org/wikipedia/commons/f/f6/Naschmarkt_Vienna_food_stalls.jpg"
+    ],
+    url: "https://de.wikipedia.org/wiki/Naschmarkt",
+    intro: "Mercato storico all’aperto con cibo internazionale e locale.",
+    storia: "Attivo dal XVI secolo, si estende lungo la Wienzeile.",
+    curiosita: "Il sabato mattina c’è anche un mercatino delle pulci.",
+    orari: "Aperture dei banchi variabili; vivace a pranzo."
+  },
+  // Architetture particolari
   {
     name: "Hundertwasserhaus",
     lat: 48.20704, lng: 16.39454,
@@ -221,31 +343,16 @@ const POI = [
       "https://upload.wikimedia.org/wikipedia/commons/d/d8/Hundertwasser_Village.jpg"
     ],
     url: "https://it.wikipedia.org/wiki/Hundertwasserhaus",
-    intro: "La Hundertwasserhaus è una residenza variopinta progettata da Friedensreich Hundertwasser.",
-    storia: "Costruita negli anni ’80, rifiuta linee rette a favore di forme organiche e tetti verdi.",
-    curiosita: "Vicino si trova l’Hundertwasser Village, con negozi e installazioni nello stesso stile.",
-    orari: "Esterni visitabili liberamente; gli interni sono residenziali, museo e negozi nei dintorni."
-  },
-  {
-    name: "McDonald’s Stephansplatz (fast food)",
-    lat: 48.20802, lng: 16.37209,
-    images: ["https://upload.wikimedia.org/wikipedia/commons/8/8e/Mcdonalds_bigmac.png"],
-    url: "https://www.mcdonalds.at/",
-    intro: "Opzione veloce per uno spuntino in zona Stephansplatz.",
-    storia: "", curiosita: "", orari: "Orari estesi; consulta la sede per dettagli."
-  },
-  {
-    name: "Burger King Kärntner Straße (fast food)",
-    lat: 48.20485, lng: 16.37062,
-    images: ["https://upload.wikimedia.org/wikipedia/commons/8/89/Burger_King_BK_logo.png"],
-    url: "https://www.burgerking.at/",
-    intro: "Burger e snack in pieno centro storico.",
-    storia: "", curiosita: "", orari: "Orari estesi; consulta la sede per dettagli."
+    intro: "Residenza variopinta e irregolare di Hundertwasser.",
+    storia: "Realizzata negli anni ’80 con linee ondulate e tetti verdi.",
+    curiosita: "Vicino, l’Hundertwasser Village prosegue lo stesso stile.",
+    orari: "Esterni liberi; negozi e museo vicini."
   }
 ];
 
 /* === MAPPA =============================================================== */
 let map, userMarker, routingControl = null;
+
 function initMap(){
   map = L.map('map').setView([hotel.lat, hotel.lng], 14);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
@@ -257,11 +364,12 @@ function initMap(){
   L.marker([hotel.lat, hotel.lng], {icon: hotelIcon})
     .addTo(map).bindPopup(`<b>${hotel.name}</b><br>Base della tua visita.`);
 
+  // Markers POI
   POI.forEach((p, idx)=>{
     const m = L.marker([p.lat, p.lng]).addTo(map);
     m.bindPopup(`
       <div style="display:grid;grid-template-columns:72px 1fr;gap:8px;min-width:260px">
-        <img loading="lazy" src="${p.images[0]}" alt="${p.name}" style="width:72px;height:72px;object-fit:cover;border-radius:10px" onerror="this.src='${FALLBACK_IMG}'">
+        ${imgHTML(p.images[0], p.name, "style='width:72px;height:72px;object-fit:cover;border-radius:10px'")}
         <div>
           <b>${p.name}</b><br>
           <small>${p.intro}</small><br>
@@ -275,6 +383,13 @@ function initMap(){
     `);
     m.on('click', ()=> selectPOI(idx, true));
   });
+
+  // Click vuoto mappa = torna allo stato iniziale
+  map.on('click', ()=>{
+    selectedPOI = null;
+    updateDetailsPanel(null);
+    buildChaptersFor(null);
+  });
 }
 initMap();
 
@@ -286,7 +401,7 @@ function renderPOIList(){
     const el = document.createElement('div');
     el.className = 'poi';
     el.innerHTML = `
-      <img loading="lazy" src="${p.images[0]}" alt="${p.name}" onerror="this.src='${FALLBACK_IMG}'">
+      ${imgHTML(p.images[0], p.name)}
       <div>
         <div class="name">${p.name}</div>
         <div class="small">${p.intro}</div>
@@ -298,13 +413,14 @@ function renderPOIList(){
 }
 renderPOIList();
 
-/* === SELEZIONE POI + GALLERIA =========================================== */
+/* === SELEZIONE POI + GALLERIA + DETTAGLI ================================= */
 let selectedPOI = null;
 let galleryIndex = 0;
 
 const galleryBox = document.getElementById('galleryBox');
 const galleryImg = document.getElementById('galleryImage');
 const imgCounter = document.getElementById('imgCounter');
+const details = document.getElementById('detailsPanel');
 
 function showGallery(poi){
   if(!poi || !poi.images || poi.images.length === 0){ galleryBox.style.display = 'none'; return; }
@@ -315,8 +431,9 @@ function showGallery(poi){
 function updateGalleryImage(poi){
   if(!poi.images || poi.images.length === 0) return;
   const url = poi.images[galleryIndex];
-  galleryImg.src = url;
-  galleryImg.onerror = ()=> { galleryImg.src = FALLBACK_IMG; };
+  galleryImg.setAttribute("referrerpolicy","no-referrer");
+  galleryImg.src = url || FALLBACK_IMG;
+  galleryImg.onerror = ()=> { galleryImg.onerror=null; galleryImg.src = FALLBACK_IMG; };
   imgCounter.textContent = `Immagine ${galleryIndex+1} di ${poi.images.length}`;
 }
 document.getElementById('prevImg').addEventListener('click', ()=>{
@@ -330,11 +447,78 @@ document.getElementById('nextImg').addEventListener('click', ()=>{
   updateGalleryImage(selectedPOI);
 });
 
+function updateDetailsPanel(p){
+  if(!p){
+    details.innerHTML = `<h2>Dettagli luogo</h2><div class="small">Seleziona un luogo per vedere foto, capitoli e navigazione.</div>`;
+    return;
+  }
+  details.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+      <h2 style="margin:0">${p.name}</h2>
+      <button id="backBtn" class="secondary">⬅️ Indietro</button>
+    </div>
+    <div class="gallery" style="margin-top:6px">
+      ${imgHTML(p.images[0]||FALLBACK_IMG, p.name, "id='gimg' style='width:100%;height:220px;object-fit:cover;border-radius:12px;border:1px solid #e9e6ff'")}
+      <div class="gallery-controls">
+        <button class="ghost" id="gprev">⬅️</button>
+        <button class="ghost" id="gnext">➡️</button>
+        <span id="gcount" class="small" style="margin-left:8px"></span>
+      </div>
+    </div>
+    <div class="small" style="margin-top:8px">
+      <b>Approfondisci:</b> <a href="${p.url}" target="_blank" rel="noopener">${p.url.replace(/^https?:\/\//,'')}</a>
+    </div>
+    <div class="top-actions" style="margin-top:8px">
+      <button id="routeFromMeBtn" class="secondary">🚗 Traccia mappa: da me</button>
+      <button id="routeFromHotelBtn" class="secondary">🚗 Traccia mappa: da hotel</button>
+      <a id="gmapsWalkD" class="btn" target="_blank" rel="noopener">🗺️ Google Maps a piedi</a>
+      <a id="gmapsDriveD" class="btn" target="_blank" rel="noopener">🗺️ Google Maps in auto</a>
+      <a id="gmapsTransitD" class="btn" target="_blank" rel="noopener">🚇 Mezzi pubblici</a>
+    </div>
+  `;
+
+  // Back
+  details.querySelector('#backBtn').addEventListener('click', ()=>{
+    selectedPOI = null;
+    updateDetailsPanel(null);
+    buildChaptersFor(null);
+    map.setView([hotel.lat, hotel.lng], 14);
+    try{ speechSynthesis.cancel(); }catch(e){}
+  });
+
+  // Gallery in dettagli
+  const gimg = details.querySelector('#gimg');
+  const gprev = details.querySelector('#gprev');
+  const gnext = details.querySelector('#gnext');
+  const gcount = details.querySelector('#gcount');
+  let gidx = 0;
+  function refresh(){
+    const url = p.images[gidx] || FALLBACK_IMG;
+    gimg.setAttribute("referrerpolicy","no-referrer");
+    gimg.src = url;
+    gimg.onerror = ()=>{ gimg.onerror=null; gimg.src = FALLBACK_IMG; };
+    gcount.textContent = `Immagine ${gidx+1} di ${p.images.length}`;
+  }
+  gprev.addEventListener('click', ()=>{ gidx = (gidx - 1 + p.images.length) % p.images.length; refresh(); });
+  gnext.addEventListener('click', ()=>{ gidx = (gidx + 1) % p.images.length; refresh(); });
+  refresh();
+
+  // Link Google Maps per dettagli
+  updateGmapsLinksForDetails(true);
+  details.querySelector('#routeFromMeBtn').addEventListener('click', ()=>{
+    navigateTo(POI.indexOf(p), true);
+  });
+  details.querySelector('#routeFromHotelBtn').addEventListener('click', ()=>{
+    navigateTo(POI.indexOf(p), false);
+  });
+}
+
 function selectPOI(index, pan){
   selectedPOI = POI[index];
   if(pan){ map.setView([selectedPOI.lat, selectedPOI.lng], 16); }
   showGallery(selectedPOI);
   updateAllGmapsLinks();
+  updateDetailsPanel(selectedPOI);
   buildChaptersFor(selectedPOI);
 }
 
@@ -360,7 +544,7 @@ function distanceMeters(a,b){
   const R=6371000, toRad = d=> d*Math.PI/180;
   const dLat = toRad(b.lat-a.lat), dLng = toRad(b.lng-a.lng);
   const s1 = Math.sin(dLat/2)**2;
-  const s2 = Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*math.sin(dLng/2)**2;
+  const s2 = Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLng/2)**2;
   return 2*R*Math.asin(Math.sqrt(s1+s2));
 }
 function routeBetween(start, end){
@@ -382,47 +566,69 @@ function navigateTo(poiIndex, fromUser){
   }
   selectedPOI = p;
   updateAllGmapsLinks();
+  updateDetailsPanel(selectedPOI);
 }
 
-/* === LINK GOOGLE MAPS ==================================================== */
+/* === LINK GOOGLE MAPS (sidebar) ========================================= */
 const gmapsWalk = document.getElementById('gmapsWalk');
 const gmapsDrive = document.getElementById('gmapsDrive');
 const gmapsTransit = document.getElementById('gmapsTransit');
 
-function gmapsUrl(mode){
-  if(!selectedPOI) return "#";
-  const origin = (userPos ? `${userPos.lat},${userPos.lng}` : `${hotel.lat},${hotel.lng}`);
-  const dest = `${selectedPOI.lat},${selectedPOI.lng}`;
+function currentOriginCoords(){
+  return (userPos ? `${userPos.lat},${userPos.lng}` : `${hotel.lat},${hotel.lng}`);
+}
+function gmapsUrlTo(lat, lng, mode){
+  const origin = currentOriginCoords();
   const travelmode = mode === 'walk' ? 'walking' : mode === 'drive' ? 'driving' : 'transit';
-  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=${travelmode}`;
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${lat},${lng}&travelmode=${travelmode}`;
 }
 function updateAllGmapsLinks(){
-  gmapsWalk.href = gmapsUrl('walk');
-  gmapsDrive.href = gmapsUrl('drive');
-  gmapsTransit.href = gmapsUrl('transit');
+  if(!selectedPOI){ gmapsWalk.href = gmapsDrive.href = gmapsTransit.href = "#"; return; }
+  gmapsWalk.href   = gmapsUrlTo(selectedPOI.lat, selectedPOI.lng, 'walk');
+  gmapsDrive.href  = gmapsUrlTo(selectedPOI.lat, selectedPOI.lng, 'drive');
+  gmapsTransit.href= gmapsUrlTo(selectedPOI.lat, selectedPOI.lng, 'transit');
 }
 
-/* Pulsanti routing rapidi su mappa (driving) e suggerimento piedi */
-document.getElementById('routeFromMeFoot').addEventListener('click', ()=>{
-  if(!selectedPOI){ alert("Seleziona prima un luogo."); return; }
-  if(!userPos){ alert("Attiva prima la tua posizione (📍)."); return; }
-  // Su mappa è driving; per camminata usa link Google Maps a piedi
-  routeBetween(userPos, {lat:selectedPOI.lat,lng:selectedPOI.lng});
-  speakNow("Percorso tracciato sulla mappa. Per camminare apri Google Maps a piedi.");
-});
+/* Link Google Maps nel pannello dettagli (se presente) */
+function updateGmapsLinksForDetails(fromUser=true){
+  if(!selectedPOI) return;
+  const w = details.querySelector('#gmapsWalkD');
+  const d = details.querySelector('#gmapsDriveD');
+  const t = details.querySelector('#gmapsTransitD');
+  if(!w||!d||!t) return;
+  const origin = fromUser && userPos ? `${userPos.lat},${userPos.lng}` : `${hotel.lat},${hotel.lng}`;
+  const base = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${selectedPOI.lat},${selectedPOI.lng}`;
+  w.href = base + "&travelmode=walking";
+  d.href = base + "&travelmode=driving";
+  t.href = base + "&travelmode=transit";
+}
+
+/* Pulsanti routing sidebar */
 document.getElementById('routeFromMeCar').addEventListener('click', ()=>{
   if(!selectedPOI){ alert("Seleziona prima un luogo."); return; }
   if(!userPos){ alert("Attiva prima la tua posizione (📍)."); return; }
   routeBetween(userPos, {lat:selectedPOI.lat,lng:selectedPOI.lng});
 });
-document.getElementById('routeFromHotelFoot').addEventListener('click', ()=>{
-  if(!selectedPOI){ alert("Seleziona prima un luogo."); return; }
-  routeBetween({lat:hotel.lat,lng:hotel.lng}, {lat:selectedPOI.lat,lng:selectedPOI.lng});
-  speakNow("Percorso tracciato dalla base. Per camminare usa il link Google Maps a piedi.");
-});
 document.getElementById('routeFromHotelCar').addEventListener('click', ()=>{
   if(!selectedPOI){ alert("Seleziona prima un luogo."); return; }
   routeBetween({lat:hotel.lat,lng:hotel.lng}, {lat:selectedPOI.lat,lng:selectedPOI.lng});
+});
+
+/* === AEROPORTO: tasto rapido + voce ===================================== */
+document.getElementById('toAirportBtn').addEventListener('click', ()=>{
+  // Traccia su mappa dall’origine corrente all’aeroporto
+  const start = userPos ? userPos : {lat:hotel.lat, lng:hotel.lng};
+  routeBetween(start, {lat:airport.lat, lng:airport.lng});
+  // Aggiorna link GM
+  selectedPOI = { name: airport.name, lat: airport.lat, lng: airport.lng,
+    intro: "Stai impostando il percorso verso l’aeroporto internazionale di Vienna.",
+    storia: "", curiosita: "", orari: "Per i collegamenti consigliati usa la modalità mezzi pubblici su Google Maps: Railjet, CAT o S-Bahn S7."
+  };
+  updateAllGmapsLinks();
+  updateDetailsPanel(selectedPOI);
+  buildChaptersFor(selectedPOI);
+  // Una breve voce di servizio (premi Play per capitoli completi)
+  speakNow("Percorso verso l’aeroporto pronto. Per i mezzi pubblici apri Google Maps in modalità transit.");
 });
 
 /* === GUIDA VOCALE A CAPITOLI ============================================ */
@@ -432,7 +638,6 @@ let voicesLoaded = false;
 let ttsUnlocked = false;
 
 let chapterQueue = [];
-let chapterNames = [];
 let currentChapterIndex = 0;
 
 const chIntro = document.getElementById('chIntro');
@@ -478,10 +683,10 @@ function unlockTTS(){
 function buildChaptersFor(p){
   if(!p){
     chapterQueue = ["Benvenuto a Vienna. Base al Boutique Hotel Das Tigra. Seleziona un punto per iniziare la guida."];
-    chapterNames = ["Intro"]; currentChapterIndex = 0; markChapter(); return;
+    currentChapterIndex = 0; markChapter(); return;
   }
-  chapterQueue = [p.intro, p.storia, p.curiosita, (p.orari||"")].filter(t=>t && t.trim().length);
-  chapterNames = ["Intro","Storia","Curiosità","Orari/Costi"].slice(0, chapterQueue.length);
+  const parts = [p.intro, p.storia, p.curiosita, (p.orari||"")].filter(t=>t && t.trim().length);
+  chapterQueue = parts.length ? parts : ["Non ci sono capitoli disponibili per questo luogo."];
   currentChapterIndex = 0; markChapter();
 }
 
@@ -506,7 +711,6 @@ function getChosenVoice(){
 }
 
 let speaking = false;
-
 function stopAll(){ try{ synth.cancel(); }catch(e){} speaking = false; }
 
 async function speakChapter(index){
@@ -524,7 +728,6 @@ async function speakChapter(index){
     });
   }
 }
-
 async function speakChaptersFrom(startIndex){
   speaking = true;
   for(let i=startIndex;i<chapterQueue.length;i++){
@@ -534,7 +737,6 @@ async function speakChaptersFrom(startIndex){
   }
   speaking = false;
 }
-
 function speakNow(text){
   stopAll();
   const voice = getChosenVoice();
@@ -553,6 +755,7 @@ function speakNow(text){
   })();
 }
 
+/* Controlli voce */
 document.getElementById('playBtn').addEventListener('click', ()=>{
   unlockTTS();
   if(!selectedPOI) buildChaptersFor(null);
@@ -571,6 +774,15 @@ document.getElementById('stopBtn').addEventListener('click', stopAll);
 buildChaptersFor(null);
 markChapter();
 
+/* === SELEZIONE POI dalla sidebar o mappa ================================= */
+function selectPOI(index, pan){
+  selectedPOI = POI[index];
+  if(pan){ map.setView([selectedPOI.lat, selectedPOI.lng], 16); }
+  showGallery(selectedPOI);
+  updateAllGmapsLinks();
+  updateDetailsPanel(selectedPOI);
+  buildChaptersFor(selectedPOI);
+}
 </script>
 </body>
 </html>
